@@ -11,4 +11,5 @@ public class MonsterStats : ScriptableObject
     public float attackDamage = 0;
     public float movespeed = 0;
     public float attackRange = 0;
+    public float attackInterval = 0f;
 }

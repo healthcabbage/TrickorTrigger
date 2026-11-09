@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MonsterState
   monsterName: "\uB205\uB205\uD55C\uC2AC\uB77C\uC784"
   maxHealth: 20
-  attackDamage: 5
+  attackDamage: 20
   movespeed: 3
   attackRange: 5
+  attackInterval: 1
