@@ -7,31 +7,28 @@ public enum MonsterState
     Idle,
     Move,
     Attack,
-    Die
+    Dead
 }
 
 public class BaseMonster : MonoBehaviour
 {
-    [Header("monsterdata")]
-    [SerializeField] protected MonsterStats stats;
-    [SerializeField] protected MonsterReward reward;
+    [Header("Monster Data")]
+    [SerializeField] private MonsterStats _monsterStats;
+    [SerializeField] private MonsterReward _monsterReward;
 
-    [Header("target")]
-    //호박 공격해야해서 타겟을 정해야함
-    [SerializeField] protected Pumpkin targetpumpkin;
+    [Header("Monster State")]
+    protected float _currentHealth;
+    protected MonsterState _currentState;
 
-    [Header("CurrentState")]
-    public MonsterState currentstate { get; private set;}
+    [Header("Target")]
+    [SerializeField] protected Pumpkin targetPumpkin;
 
-    public float currenthealth { get; private set;}
+    protected bool isDead;
+    protected bool isInitialized;
 
-    public bool isDead { get; private set;}
-
-    //다음공격타이밍
-    private float nextattacktime;
-
-    // 초기화 여부
-    private bool isInitialized;
+    public float CurrentHealth => _currentHealth;
+    public bool IsDead => isDead;
+    public MonsterState CurrentState => _currentState;
 
     protected virtual void Awake()
     {
@@ -40,7 +37,10 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void Update()
     {
-        switch (currentstate)
+        if (!isInitialized || isDead)
+            return;
+
+        switch (_currentState)
         {
             case MonsterState.Idle:
                 UpdateIdle();
@@ -51,9 +51,9 @@ public class BaseMonster : MonoBehaviour
             case MonsterState.Attack:
                 UpdateAttack();
                 break;
-            case MonsterState.Die:
-                UpdateDie();
-                break; 
+            case MonsterState.Dead:
+                UpdateDead();
+                break;
         }
 
         if (Input.GetKeyDown(KeyCode.K))
@@ -62,21 +62,19 @@ public class BaseMonster : MonoBehaviour
         }
     }
 
-    protected virtual void InitializeMonster()
+    public virtual void InitializeMonster()
     {
-        if (stats == null)
+        if (_monsterStats == null)
         {
-                        Debug.LogError(
-                "MonsterStats가 연결되지 않았습니다.",
-                this
-            );
+            Debug.LogError("Monster Stats가 연결되지 않았습니다.", this);
 
+            isInitialized = false;
             return;
         }
 
-        currenthealth = stats.maxHealth;
+        _currentHealth = _monsterStats.maxHealth;
 
-        currentstate = MonsterState.Idle;
+        _currentState = MonsterState.Idle;
 
         isDead = false;
 
@@ -85,135 +83,178 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void ChangeState(MonsterState newState)
     {
-        if (currentstate == newState)
+        if (_currentState == newState)
             return;
 
-        currentstate = newState;
+        _currentState = newState;
+    }
+
+    //몬스터의 목표 설정
+    public virtual void SetTarget(Pumpkin pumpkin)
+    {
+        if (pumpkin == null)
+        {
+            Debug.LogError("Target Pumpkin이 연결되지 않았습니다.", this);
+            return;
+        }
+
+        targetPumpkin = pumpkin;
+
+        ChangeState(MonsterState.Move);
+    }
+
+    //호박에게 이동하는 로직
+    protected virtual void MoveToTarget()
+    {
+        if (targetPumpkin == null)
+            return;
+
+        //몬스터 이동 로직 구현
+        Vector3 targetPosition = targetPumpkin.transform.position - transform.position;
+
+        targetPosition.y = 0f;
+        targetPosition.Normalize();
+
+        transform.position += targetPosition * _monsterStats.movespeed * Time.deltaTime;
     }
 
     protected virtual void UpdateIdle()
     {
+        if (targetPumpkin == null)
+        {
+            ChangeState(MonsterState.Idle);
+            return;
+        }
+
         ChangeState(MonsterState.Move);
     }
 
     protected virtual void UpdateMove()
     {
-        if (IsTargetInRange())
+        if (targetPumpkin == null)
+        {
+            ChangeState(MonsterState.Idle);
+            return;
+        }
+
+        float distance = Vector3.Distance(transform.position, targetPumpkin.transform.position);
+
+        if (distance <= _monsterStats.attackRange)
         {
             ChangeState(MonsterState.Attack);
             return;
         }
 
-        MoveToPumpkin();
-    }
-
-    protected virtual bool IsTargetInRange()
-    {
-        if (targetpumpkin == null)
-            return false;
-
-        Vector3 monsterPosition = transform.position;
-        Vector3 pumpkinPosition = targetpumpkin.transform.position;
-
-        monsterPosition.y = 0f;
-        pumpkinPosition.y = 0f;
-
-        float distance = Vector3.Distance(monsterPosition, pumpkinPosition);
-        return distance <= stats.attackRange;
-    }
-
-    protected virtual void MoveToPumpkin()
-    {
-        if (targetpumpkin == null)
-            return;
-        
-        Vector3 targetPosition = targetpumpkin.transform.position;
-
-        targetPosition.y = transform.position.y;
-
-        transform.position = Vector3.MoveTowards(transform.position, targetPosition, stats.movespeed * Time.deltaTime);
+        MoveToTarget();
     }
 
     protected virtual void UpdateAttack()
     {
-        // 공격 로직 구현
-        if (!IsTargetInRange())
+        if (targetPumpkin == null)
         {
-            ChangeState(MonsterState.Move);
+            ChangeState(MonsterState.Idle);
             return;
         }
 
-        AttackPumpkin();
+        //공격 로직은 자식에게서
     }
 
-    protected virtual void AttackPumpkin()
+    protected virtual void UpdateDead()
     {
-        if (targetpumpkin == null)
-            return;
-
-        if (Time.time < nextattacktime)
-            return;
         
-        targetpumpkin.TakeDamage(stats.attackDamage);
-
-        nextattacktime = Time.time + stats.attackInterval;
     }
 
-    public virtual void TakeDamage(float damage)
+    //몬스터가 데미지를 받는 로직
+    public virtual void TakeDamage(DamageInfo damage)
     {
-        if(isDead)
+        if (!isInitialized || isDead)
             return;
         
-        currenthealth -= damage;
+        if (damage.damage <= 0f)
+            return;
+        
+        _currentHealth -= damage.damage;
 
-        if (currenthealth <= 0f)
+        _currentHealth = Mathf.Max(0f, _currentHealth);
+
+        OnHit(damage);
+
+        if (_currentHealth <= 0f)
         {
-            currenthealth = 0f;
             Die();
         }
+    }
+
+    //몬스터가 공격을 받았을 때 호출되는 로직
+    protected virtual void OnHit(DamageInfo damageInfo)
+    {
+        // 피격 효과
+        Debug.Log($"{gameObject.name} 피격!");
+
+        // 넉백 처리
+        if (damageInfo.knockbackPower > 0f)
+        {
+            ApplyKnockback(
+                damageInfo.knockbackDirection,
+                damageInfo.knockbackPower
+            );
+        }
+    }
+
+    protected virtual void ApplyKnockback(Vector3 direction,float power)
+    {
+        // 추후 Rigidbody를 이용한 넉백 구현
     }
 
     protected virtual void Die()
     {
         if (isDead)
             return;
-
+        
         isDead = true;
 
-        ChangeState(MonsterState.Die);
+        ChangeState(MonsterState.Dead);
 
-        // 추가적인 사망 처리 로직을 여기에 구현할 수 있습니다.
+        //보상 지급
+        DropReward();
 
-        Dropreward();
-
-        gameObject.SetActive(false);
-    }
-    protected virtual void UpdateDie()
-    {
+        Destroy(gameObject);
     }
 
-    protected virtual void Dropreward()
+    protected virtual void DropReward()
     {
-        if (reward == null)
+        if (_monsterReward == null)
+            return;
+
+        // 코인 생성
+        SpawnDrop(
+            _monsterReward.coinPrefab,
+            _monsterReward.coindropcount
+        );
+
+        // 사탕 생성
+        SpawnDrop(
+            _monsterReward.candyPrefab,
+            _monsterReward.candydropcount
+        );
+    }
+
+    protected virtual void SpawnDrop(GameObject prefab, int count)
+    {
+        if (prefab == null || count <= 0)
+            return;
+
+        for (int i = 0; i < count; i++)
         {
-            Debug.LogWarning(
-                "MonsterReward가 연결되지 않았습니다.",
-                this
+            Vector3 randomOffset = new Vector3(
+                Random.Range(-0.5f, 0.5f),
+                0f,
+                Random.Range(-0.5f, 0.5f)
             );
 
-            return;
-        }
+            Vector3 spawnPosition = transform.position + randomOffset;
 
-        // 보상 드롭 로직 구현
-        // 예: 플레이어에게 보상을 추가하거나, 아이템을 생성하는 등의 작업 수행
-        for (int i = 0; i < reward.coinamountdrop; i++)
-        {
-            if (reward.coinPrefab == null)
-                break;
-            
-            GameObject coin = Instantiate(reward.coinPrefab, transform.position, Quaternion.identity);
-
-            
+            Instantiate(prefab, spawnPosition, Quaternion.identity);
         }
     }
 }
