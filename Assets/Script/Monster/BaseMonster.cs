@@ -86,6 +86,9 @@ public class BaseMonster : MonoBehaviour
         if (_currentState == newState)
             return;
 
+        if (isDead && newState != MonsterState.Dead)
+            return;
+
         _currentState = newState;
     }
 
@@ -109,13 +112,15 @@ public class BaseMonster : MonoBehaviour
         if (targetPumpkin == null)
             return;
 
-        //몬스터 이동 로직 구현
-        Vector3 targetPosition = targetPumpkin.transform.position - transform.position;
+        Vector3 direction =
+            targetPumpkin.transform.position - transform.position;
 
-        targetPosition.y = 0f;
-        targetPosition.Normalize();
+        direction.y = 0f;
+        direction.Normalize();
 
-        transform.position += targetPosition * _monsterStats.movespeed * Time.deltaTime;
+        transform.position += direction
+            * _monsterStats.movespeed
+            * Time.deltaTime;
     }
 
     protected virtual void UpdateIdle()
@@ -256,5 +261,23 @@ public class BaseMonster : MonoBehaviour
 
             Instantiate(prefab, spawnPosition, Quaternion.identity);
         }
+    }
+
+    public virtual void OnSpawn()
+    {
+        targetPumpkin = null;
+
+        InitializeMonster();
+    }
+
+    public virtual void OnDespawn()
+    {
+        targetPumpkin = null;
+
+        _currentState = MonsterState.Dead;
+
+        isInitialized = false;
+
+        isDead = true;
     }
 }
