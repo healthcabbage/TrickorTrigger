@@ -156,4 +156,7 @@ MonoBehaviour:
   _monsterStats: {fileID: 11400000, guid: 701600ca97459f248ae8334d1183697b, type: 2}
   _monsterReward: {fileID: 11400000, guid: b6adcfb62e3ef5a4997e6abe95a56ce3, type: 2}
   targetPumpkin: {fileID: 0}
+  dropRadius: 2
+  minDropDistance: 1
+  maxPositionAttempts: 30
   attackCooldown: 1.5

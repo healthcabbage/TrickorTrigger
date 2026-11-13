@@ -1,6 +1,6 @@
 using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 public enum MonsterState
 {
@@ -22,6 +22,11 @@ public class BaseMonster : MonoBehaviour
 
     [Header("Target")]
     [SerializeField] protected Pumpkin targetPumpkin;
+
+    [Header("Drop Settings")]
+    [SerializeField] private float dropRadius = 1.5f;
+    [SerializeField] private float minDropDistance = 0.5f;
+    [SerializeField] private int maxPositionAttempts = 30;
 
     protected bool isDead;
     protected bool isInitialized;
@@ -231,36 +236,74 @@ public class BaseMonster : MonoBehaviour
         if (_monsterReward == null)
             return;
 
-        // 코인 생성
+        // 코인과 사탕이 서로 겹치지 않도록 위치를 공유
+        List<Vector3> usedPositions = new List<Vector3>();
+
         SpawnDrop(
             _monsterReward.coinPrefab,
-            _monsterReward.coindropcount
+            _monsterReward.coindropcount,
+            usedPositions
         );
 
-        // 사탕 생성
         SpawnDrop(
             _monsterReward.candyPrefab,
-            _monsterReward.candydropcount
+            _monsterReward.candydropcount,
+            usedPositions
         );
     }
 
-    protected virtual void SpawnDrop(GameObject prefab, int count)
+    protected virtual void SpawnDrop(GameObject prefab, int count, List<Vector3> usedPositions)
     {
-        if (prefab == null || count <= 0)
+        if (_monsterReward == null)
             return;
 
         for (int i = 0; i < count; i++)
         {
-            Vector3 randomOffset = new Vector3(
-                Random.Range(-0.5f, 0.5f),
-                0f,
-                Random.Range(-0.5f, 0.5f)
+            Vector3 spawnPosition = GetDropPosition(usedPositions);
+
+            Instantiate(
+                prefab,
+                spawnPosition,
+                Quaternion.identity
             );
 
-            Vector3 spawnPosition = transform.position + randomOffset;
-
-            Instantiate(prefab, spawnPosition, Quaternion.identity);
+            usedPositions.Add(spawnPosition);
         }
+    }
+
+    private Vector3 GetDropPosition(List<Vector3> usedPositions)
+    {
+        for (int attempt = 0; attempt < maxPositionAttempts; attempt++)
+        {
+            // 몬스터 주변의 랜덤한 위치
+            Vector2 randomOffset =
+                Random.insideUnitCircle * dropRadius;
+
+            Vector3 candidate = transform.position +
+                new Vector3(randomOffset.x, 0f, randomOffset.y);
+
+            bool isOverlapping = false;
+
+            foreach (Vector3 usedPosition in usedPositions)
+            {
+                float distance = Vector3.Distance(
+                    candidate,
+                    usedPosition
+                );
+
+                if (distance < minDropDistance)
+                {
+                    isOverlapping = true;
+                    break;
+                }
+            }
+
+            if (!isOverlapping)
+                return candidate;
+        }
+
+        // 적절한 위치를 찾지 못하면 마지막 위치 반환
+        return transform.position;
     }
 
     public virtual void OnSpawn()
