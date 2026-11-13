@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3172089577127261609}
   - component: {fileID: 576850128436760658}
   - component: {fileID: 3615397050533240167}
-  - component: {fileID: 6094555395460477207}
+  - component: {fileID: -1736135510346818329}
   m_Layer: 0
   m_Name: Monster
   m_TagString: Untagged
@@ -141,7 +141,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &6094555395460477207
+--- !u!114 &-1736135510346818329
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -150,9 +150,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1154052726414924379}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0facfde64036b4b43aebe51f29d921ec, type: 3}
+  m_Script: {fileID: 11500000, guid: 92b4dc5acb47c8446b4624f46bfa9670, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BaseMonster
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeMonster
   _monsterStats: {fileID: 11400000, guid: 701600ca97459f248ae8334d1183697b, type: 2}
   _monsterReward: {fileID: 11400000, guid: b6adcfb62e3ef5a4997e6abe95a56ce3, type: 2}
   targetPumpkin: {fileID: 0}
+  attackCooldown: 1.5

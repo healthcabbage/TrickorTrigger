@@ -13,8 +13,8 @@ public enum MonsterState
 public class BaseMonster : MonoBehaviour
 {
     [Header("Monster Data")]
-    [SerializeField] private MonsterStats _monsterStats;
-    [SerializeField] private MonsterReward _monsterReward;
+    [SerializeField] protected MonsterStats _monsterStats;
+    [SerializeField] protected MonsterReward _monsterReward;
 
     [Header("Monster State")]
     protected float _currentHealth;
