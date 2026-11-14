@@ -248,27 +248,35 @@ public class BaseMonster : MonoBehaviour
         SpawnDrop(
             _monsterReward.candyPrefab,
             _monsterReward.candydropcount,
-            usedPositions
+            usedPositions,
+            _monsterReward.candyamountdrop
         );
     }
 
-    protected virtual void SpawnDrop(GameObject prefab, int count, List<Vector3> usedPositions)
+    protected virtual void SpawnDrop(GameObject prefab, int count, List<Vector3> usedPositions, int experienceAmount = 0)
     {
-        if (_monsterReward == null)
-            return;
+        if (prefab == null || count <= 0)
+                return;
 
-        for (int i = 0; i < count; i++)
-        {
-            Vector3 spawnPosition = GetDropPosition(usedPositions);
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 spawnPosition = GetDropPosition(usedPositions);
 
-            Instantiate(
-                prefab,
-                spawnPosition,
-                Quaternion.identity
-            );
+                GameObject dropObject = Instantiate(
+                    prefab,
+                    spawnPosition,
+                    Quaternion.identity
+                );
 
-            usedPositions.Add(spawnPosition);
-        }
+                DropItem dropItem = dropObject.GetComponent<DropItem>();
+
+                if (dropItem != null)
+                {
+                    dropItem.Initialize(experienceAmount);
+                }
+
+                usedPositions.Add(spawnPosition);
+            }
     }
 
     private Vector3 GetDropPosition(List<Vector3> usedPositions)
