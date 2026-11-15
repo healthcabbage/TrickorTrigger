@@ -270,7 +270,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &123293270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1187,7 +1187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
   monsterPrefabs:
-  - {fileID: 5637182338636907969, guid: ba261d72fd896304399e49186db7c210, type: 3}
+  - {fileID: 933135920589578783, guid: fd7649a9edc47ed4b9904e71eae5cd6e, type: 3}
   targetPumpkin: {fileID: 896211024}
   spawnPoint: {fileID: 1978023846}
   spawnInterval: 2

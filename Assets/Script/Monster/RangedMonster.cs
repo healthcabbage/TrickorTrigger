@@ -10,21 +10,7 @@ public class RangedMonster : BaseMonster
     [SerializeField] private float projectileSpeed = 8f;
     [SerializeField] private float projectileLifetime = 5f;
 
-    private float attackTimer;
-
-    protected override void UpdateAttack()
-    {
-        base.UpdateAttack();
-
-        attackTimer += Time.deltaTime;
-        if (attackTimer < _monsterStats.attackInterval)
-            return;
-
-        attackTimer = 0f;
-        Attack();
-    }
-
-    private void Attack()
+    protected override void Attack()
     {
         if (targetPumpkin == null)
             return;
@@ -55,13 +41,5 @@ public class RangedMonster : BaseMonster
         }
 
         projectile.Initialize(direction, _monsterStats.attackDamage, projectileSpeed, projectileLifetime);
-
-        Debug.Log(_monsterStats.attackDamage);
-    }
-
-    public override void OnSpawn()
-    {
-        base.OnSpawn();
-        attackTimer = _monsterStats != null ? _monsterStats.attackInterval : 0f;
     }
 }
