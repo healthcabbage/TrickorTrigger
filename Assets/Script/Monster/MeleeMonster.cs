@@ -16,14 +16,6 @@ public class MeleeMonster : BaseMonster
     {
         base.UpdateAttack();
 
-        float distance = Vector3.Distance(transform.position, targetPumpkin.transform.position);
-
-        if (distance > _monsterStats.attackRange)
-        {
-            ChangeState(MonsterState.Move);
-            return;
-        }
-
         attackTimer += Time.deltaTime;
 
         if (attackTimer >= attackCooldown)

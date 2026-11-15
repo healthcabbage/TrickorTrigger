@@ -166,6 +166,15 @@ public class BaseMonster : MonoBehaviour
             return;
         }
 
+        
+        float distance = Vector3.Distance(transform.position, targetPumpkin.transform.position);
+        
+        if (distance > _monsterStats.attackRange)
+        {
+            ChangeState(MonsterState.Move);
+            return;
+        }
+
         //공격 로직은 자식에게서
     }
 
