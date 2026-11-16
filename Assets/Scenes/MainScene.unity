@@ -201,19 +201,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 10291338}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1388277960}
-        m_TargetAssemblyTypeName: LevelUpManager, Assembly-CSharp
-        m_MethodName: CompleteRewardSelection
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &10291338
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -375,7 +363,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!54 &131665600
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -516,6 +504,7 @@ MonoBehaviour:
   maxPositionAttempts: 30
   bossStats: {fileID: 11400000, guid: 3633fb1e95b08f447a4ff4aac0667291, type: 2}
   targetPlayer: {fileID: 564282978}
+  skillGaugeHeight: 2.5
 --- !u!1 &138198500
 GameObject:
   m_ObjectHideFlags: 0
@@ -1130,6 +1119,8 @@ GameObject:
   - component: {fileID: 564282980}
   - component: {fileID: 564282982}
   - component: {fileID: 564282981}
+  - component: {fileID: 564282983}
+  - component: {fileID: 564282984}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1316,9 +1307,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ff194f519ef562459766c87ed70d34b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
+  availableWeapons:
+  - {fileID: 564282981}
+  - {fileID: 564282983}
+  - {fileID: 564282984}
   currentWeapon: {fileID: 564282981}
   mainCamera: {fileID: 330585545}
   playerTransform: {fileID: 564282977}
+--- !u!114 &564282983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 564282973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26bbd12c89dd4b988b8e80c74bca84b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeConeWeapon
+  weaponData: {fileID: 11400000, guid: a9013bb509bd4b25bf637a2b92d7d891, type: 2}
+  attackPoint: {fileID: 564282977}
+  monsterLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &564282984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 564282973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b5a77a35ba49d2a213343cd4d1d4b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BombWeapon
+  weaponData: {fileID: 11400000, guid: 36eb342706d9429c91bd7c8bf988133b, type: 2}
+  throwPoint: {fileID: 564282977}
 --- !u!1 &672628747
 GameObject:
   m_ObjectHideFlags: 0
@@ -1335,7 +1361,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &672628748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1349,6 +1375,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
   monsterPrefabs:
+  - {fileID: -1736135510346818329, guid: 14fb1b49b17d3634caffd6eacacb1a4d, type: 3}
   - {fileID: 933135920589578783, guid: fd7649a9edc47ed4b9904e71eae5cd6e, type: 3}
   targetPumpkin: {fileID: 896211024}
   spawnPoint: {fileID: 1978023846}
@@ -1451,19 +1478,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 713124685}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1388277960}
-        m_TargetAssemblyTypeName: LevelUpManager, Assembly-CSharp
-        m_MethodName: CompleteRewardSelection
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &713124685
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1896,6 +1911,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelUpManager
   playerExperience: {fileID: 564282980}
+  weaponController: {fileID: 564282982}
+  playerController: {fileID: 564282978}
   levelUpPanel: {fileID: 463113087}
 --- !u!4 &1388277961
 Transform:
@@ -2131,19 +2148,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1619875159}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1388277960}
-        m_TargetAssemblyTypeName: LevelUpManager, Assembly-CSharp
-        m_MethodName: CompleteRewardSelection
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1619875159
 MonoBehaviour:
   m_ObjectHideFlags: 0

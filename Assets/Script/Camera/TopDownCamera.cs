@@ -11,6 +11,12 @@ public class TopDownCamera : MonoBehaviour
     [Header("Camera Follow")]
     [SerializeField] private float followSpeed = 10f;
 
+    private void Awake()
+    {
+        if (target != null)
+            transform.position = target.position + offset;
+    }
+
     private void LateUpdate()
     {
         if (target == null)
@@ -18,10 +24,7 @@ public class TopDownCamera : MonoBehaviour
         
         Vector3 targetPosition = target.position + offset;
 
-        transform.position = Vector3.Lerp(
-            transform.position,
-            targetPosition,
-            followSpeed * Time.deltaTime
-        );
+        float followAmount = 1f - Mathf.Exp(-followSpeed * Time.unscaledDeltaTime);
+        transform.position = Vector3.Lerp(transform.position, targetPosition, followAmount);
     }
 }

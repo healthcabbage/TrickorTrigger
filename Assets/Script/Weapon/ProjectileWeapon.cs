@@ -1,10 +1,37 @@
 
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ProjectileWeapon : BaseWeapon
 {
     [Header("Projectile Spawn")]
     [SerializeField] private Transform firePoint;
+
+    private float projectileSpeedMultiplier = 1f;
+
+    public float ProjectileSpeed => weaponData != null ? weaponData.projectileSpeed * projectileSpeedMultiplier : 0f;
+    public float ProjectileLifetime => weaponData != null
+        ? weaponData.projectileLifetime * RangeMultiplier
+        : 0f;
+
+    public override List<WeaponUpgradeType> GetAvailableUpgrades()
+    {
+        List<WeaponUpgradeType> upgrades = base.GetAvailableUpgrades();
+        if (weaponData != null && weaponData.projectileSpeed > 0f)
+            upgrades.Add(WeaponUpgradeType.ProjectileSpeed);
+        return upgrades;
+    }
+
+    protected override bool CanUpgradeRange => weaponData != null && weaponData.projectileLifetime > 0f;
+
+    protected override bool ApplySpecialUpgrade(WeaponUpgradeType upgrade)
+    {
+        if (upgrade != WeaponUpgradeType.ProjectileSpeed)
+            return false;
+
+        projectileSpeedMultiplier *= 1.2f;
+        return true;
+    }
 
     public override void Attack(Vector3 direction)
     {
@@ -39,9 +66,9 @@ public class ProjectileWeapon : BaseWeapon
         {
             projectile.Initialize(
                 direction,
-                weaponData.damage,
-                weaponData.projectileSpeed,
-                weaponData.projectileLifetime,
+                Damage,
+                ProjectileSpeed,
+                ProjectileLifetime,
                 weaponData.knockbackPower
             );
         }
