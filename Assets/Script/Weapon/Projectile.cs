@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Rigidbody))]
 public class Projectile : MonoBehaviour
@@ -14,7 +15,8 @@ public class Projectile : MonoBehaviour
     private float knockbackPower;
 
     private bool isInitialized;
-    private bool hasHit;
+    private int remainingHits = 1;
+    private readonly HashSet<BaseMonster> hitMonsters = new HashSet<BaseMonster>();
 
     private void Awake()
     {
@@ -26,7 +28,8 @@ public class Projectile : MonoBehaviour
         float damageAmount,
         float speed,
         float lifeTime,
-        float knockback)
+        float knockback,
+        int additionalHits = 0)
     {
         moveDirection = direction.normalized;
 
@@ -34,6 +37,7 @@ public class Projectile : MonoBehaviour
         moveSpeed = speed;
         lifetime = lifeTime;
         knockbackPower = knockback;
+        remainingHits = Mathf.Max(1, additionalHits + 1);
 
         isInitialized = true;
 
@@ -42,7 +46,7 @@ public class Projectile : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!isInitialized || hasHit)
+        if (!isInitialized)
             return;
 
         Vector3 nextPosition =
@@ -53,16 +57,11 @@ public class Projectile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (hasHit)
-            return;
-
         BaseMonster monster =
             other.GetComponentInParent<BaseMonster>();
 
-        if (monster == null)
+        if (monster == null || !hitMonsters.Add(monster))
             return;
-
-        hasHit = true;
 
         DamageInfo damageInfo = new DamageInfo
         {
@@ -73,6 +72,8 @@ public class Projectile : MonoBehaviour
 
         monster.TakeDamage(damageInfo);
 
-        Destroy(gameObject);
+        remainingHits--;
+        if (remainingHits <= 0)
+            Destroy(gameObject);
     }
 }

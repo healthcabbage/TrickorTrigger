@@ -158,7 +158,9 @@ public class LevelUpManager : MonoBehaviour
         levelUpPanel.SetActive(true);
 
         int count = Mathf.Min(upgrades.Count, optionButtons.Length);
-        SetPanelTitle($"레벨 {pendingLevelUps.Peek()} · 강화 하나를 선택하세요");
+        SetPanelTitle(weapon.Level == BaseWeapon.MaxLevel - 1
+            ? $"{weapon.WeaponName} · 최종 특수 강화 선택"
+            : $"{weapon.WeaponName} 강화 · Lv.{weapon.Level} → Lv.{weapon.Level + 1}");
         LayoutOptionCards(count);
         for (int i = 0; i < optionButtons.Length; i++)
         {
@@ -169,7 +171,10 @@ public class LevelUpManager : MonoBehaviour
             }
 
             WeaponUpgradeType upgrade = upgrades[i];
-            string label = $"{BaseWeapon.GetUpgradeLabel(upgrade)}\n{weapon.WeaponName} Lv.{weapon.Level} → Lv.{weapon.Level + 1}";
+            string levelLabel = weapon.Level == BaseWeapon.MaxLevel - 1
+                ? "무기 Lv.7 최종 강화"
+                : $"무기 Lv.{weapon.Level} → Lv.{weapon.Level + 1}";
+            string label = $"{BaseWeapon.GetUpgradeLabel(upgrade)}\n{levelLabel}";
             BindOption(i, label, () => SelectUpgrade(upgrade));
         }
     }

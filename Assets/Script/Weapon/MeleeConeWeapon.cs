@@ -18,6 +18,15 @@ public class MeleeConeWeapon : BaseWeapon
     private float slashTimer;
     private Vector3 slashDirection;
     private float attackAngleBonus;
+    private bool bleedUnlocked;
+    private bool soulHarvestUnlocked;
+    private bool extraStrikeUnlocked;
+    [SerializeField, Range(0f, 1f)] private float soulDropChance = 0.2f;
+    [SerializeField, Range(0f, 1f)] private float soulHealMaxHealthFraction = 0.1f;
+    [SerializeField, Range(0f, 1f)] private float extraStrikeDamageFraction = 0.6f;
+    [SerializeField, Min(0f)] private float bleedDuration = 3f;
+    [SerializeField, Min(0.01f)] private float bleedTickInterval = 1f;
+    [SerializeField, Range(0f, 1f)] private float bleedDamageFractionPerTick = 0.15f;
     private const float SlashDuration = 0.2f;
 
     private float CurrentAttackRange => weaponData != null
@@ -32,6 +41,8 @@ public class MeleeConeWeapon : BaseWeapon
     public override List<WeaponUpgradeType> GetAvailableUpgrades()
     {
         List<WeaponUpgradeType> upgrades = base.GetAvailableUpgrades();
+        if (IsFinalUpgradeLevel)
+            return upgrades;
         if (CurrentAttackAngle < 180f)
             upgrades.Add(WeaponUpgradeType.MeleeArc);
         return upgrades;
@@ -39,11 +50,35 @@ public class MeleeConeWeapon : BaseWeapon
 
     protected override bool ApplySpecialUpgrade(WeaponUpgradeType upgrade)
     {
-        if (upgrade != WeaponUpgradeType.MeleeArc || CurrentAttackAngle >= 180f)
-            return false;
+        switch (upgrade)
+        {
+            case WeaponUpgradeType.MeleeArc:
+                if (CurrentAttackAngle >= 180f)
+                    return false;
+                attackAngleBonus += Mathf.Min(15f, 180f - CurrentAttackAngle);
+                return true;
+            case WeaponUpgradeType.MeleeBleed:
+                bleedUnlocked = true;
+                return true;
+            case WeaponUpgradeType.MeleeSoulHarvest:
+                soulHarvestUnlocked = true;
+                return true;
+            case WeaponUpgradeType.MeleeExtraStrike:
+                extraStrikeUnlocked = true;
+                return true;
+            default:
+                return false;
+        }
+    }
 
-        attackAngleBonus += Mathf.Min(15f, 180f - CurrentAttackAngle);
-        return true;
+    protected override List<WeaponUpgradeType> GetFinalUpgrades()
+    {
+        return new List<WeaponUpgradeType>
+        {
+            WeaponUpgradeType.MeleeBleed,
+            WeaponUpgradeType.MeleeSoulHarvest,
+            WeaponUpgradeType.MeleeExtraStrike
+        };
     }
 
     public override void SetSelected(bool selected)
@@ -236,14 +271,41 @@ public class MeleeConeWeapon : BaseWeapon
                 continue;
             }
 
-            monster.TakeDamage(new DamageInfo
+            DamageInfo hitDamage = new DamageInfo
             {
                 damage = Damage,
                 attacker = gameObject,
                 attackSource = gameObject,
                 knockbackPower = weaponData.knockbackPower,
                 knockbackDirection = toMonster.sqrMagnitude > 0.001f ? toMonster.normalized : direction
-            });
+            };
+            monster.TakeDamage(hitDamage);
+
+            if (bleedUnlocked && !monster.IsDead)
+            {
+                MonsterBleedEffect.Apply(
+                    monster,
+                    Damage * bleedDamageFractionPerTick,
+                    bleedTickInterval,
+                    bleedDuration,
+                    gameObject);
+            }
+
+            if (extraStrikeUnlocked && !monster.IsDead)
+            {
+                hitDamage.damage = Damage * extraStrikeDamageFraction;
+                monster.TakeDamage(hitDamage);
+            }
+
+            if (soulHarvestUnlocked && monster.IsDead && Random.value < soulDropChance)
+            {
+                PlayerController player = GetComponentInParent<PlayerController>();
+                float healAmount = player != null
+                    ? player.MaxHealth * soulHealMaxHealthFraction
+                    : 0f;
+                if (healAmount > 0f)
+                    SoulDrop.Spawn(monster.transform.position, healAmount);
+            }
         }
     }
 }

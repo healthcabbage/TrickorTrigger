@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
     private float verticalVelocity;
 
     public float CurrentHealth { get; private set; }
+    public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
 
     private void Awake()
@@ -36,6 +37,14 @@ public class PlayerController : MonoBehaviour
         CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
         if (IsDead)
             enabled = false;
+    }
+
+    public void Heal(float amount)
+    {
+        if (IsDead || amount <= 0f)
+            return;
+
+        CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
     }
 
     // Update is called once per frame
