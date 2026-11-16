@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e8c68ef060705649b248089826f8870, type: 3}
+  m_Name: BombWeapon
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: "\uD3ED\uD0C4"
+  damage: 40
+  attackInterval: 2.5
+  knockbackPower: 4
+  projectilePrefab: {fileID: 3636224759188329300, guid: 25a49ed6501f4b1cabe2d47357159376, type: 3}
+  projectileSpeed: 12
+  projectileLifetime: 0
+  attackRange: 0
+  attackAngle: 0
+  throwRange: 8
+  explosionDelay: 1.2
+  explosionRadius: 3

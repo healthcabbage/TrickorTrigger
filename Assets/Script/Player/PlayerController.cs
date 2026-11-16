@@ -17,9 +17,12 @@ public class PlayerController : MonoBehaviour
     private CharacterController controller;
     private Camera mainCamera;
     private float verticalVelocity;
+    private float shieldTimeRemaining;
 
     public float CurrentHealth { get; private set; }
+    public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
+    public bool IsShielded => shieldTimeRemaining > 0f;
 
     private void Awake()
     {
@@ -30,17 +33,37 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        if (IsDead || damage <= 0f)
+        if (IsDead || IsShielded || damage <= 0f)
             return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
         if (IsDead)
+        {
+            shieldTimeRemaining = 0f;
             enabled = false;
+        }
+    }
+
+    public void GrantShield(float duration)
+    {
+        if (IsDead || duration <= 0f)
+            return;
+
+        shieldTimeRemaining = Mathf.Max(shieldTimeRemaining, duration);
+    }
+
+    public void Heal(float amount)
+    {
+        if (IsDead || amount <= 0f)
+            return;
+
+        CurrentHealth = Mathf.Min(maxHealth, CurrentHealth + amount);
     }
 
     // Update is called once per frame
     void Update()
     {
+        shieldTimeRemaining = Mathf.Max(0f, shieldTimeRemaining - Time.deltaTime);
         Move();
         LookAtMouse();
     }
@@ -59,9 +82,11 @@ public class PlayerController : MonoBehaviour
         input = Vector2.ClampMagnitude(input, 1f);
 
         Vector3 velocity = new Vector3(input.x, 0f, input.y) * moveSpeed;
+        if (controller.isGrounded && verticalVelocity < 0f)
+            verticalVelocity = -2f;
 
-        velocity.y = -10f;
-
+        verticalVelocity += gravity * Time.deltaTime;
+        velocity.y = verticalVelocity;
         controller.Move(velocity * Time.deltaTime);
     }
 

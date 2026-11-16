@@ -1,17 +1,21 @@
-
 using UnityEngine;
 
 public class PlayerWeaponController : MonoBehaviour
 {
-    [Header("Weapon")]
+    [Header("Weapon Choices")]
+    [SerializeField] private BaseWeapon[] availableWeapons;
     [SerializeField] private BaseWeapon currentWeapon;
 
     [Header("Aim")]
     [SerializeField] private Camera mainCamera;
-
     [SerializeField] private Transform playerTransform;
 
     private float attackTimer;
+    private bool attackQueued;
+    private bool gameplayActive = true;
+
+    public BaseWeapon[] AvailableWeapons => availableWeapons;
+    public BaseWeapon CurrentWeapon => currentWeapon;
 
     private void Awake()
     {
@@ -20,30 +24,64 @@ public class PlayerWeaponController : MonoBehaviour
 
         if (playerTransform == null)
             playerTransform = transform;
+
+        if (availableWeapons != null && availableWeapons.Length > 0)
+        {
+            if (currentWeapon == null)
+                currentWeapon = availableWeapons[0];
+
+            for (int i = 0; i < availableWeapons.Length; i++)
+            {
+                if (availableWeapons[i] != null)
+                    availableWeapons[i].SetSelected(false);
+            }
+
+            currentWeapon = null;
+        }
     }
 
     private void Update()
     {
-        if (currentWeapon == null)
+        if (!gameplayActive || currentWeapon == null)
             return;
 
         attackTimer += Time.deltaTime;
-
-        // 마우스 왼쪽 버튼을 누르고 있는 동안 공격
-        if (!Input.GetMouseButton(0))
-            return;
-
-        if (attackTimer < currentWeapon.AttackInterval)
-            return;
-
         Vector3 direction = GetMouseDirection();
+        currentWeapon.SetAimDirection(direction);
 
-        if (direction == Vector3.zero)
+        if (Input.GetMouseButtonDown(0))
+            attackQueued = true;
+
+        if (!attackQueued || attackTimer < currentWeapon.AttackInterval || direction == Vector3.zero)
             return;
 
         currentWeapon.Attack(direction);
-
         attackTimer = 0f;
+        attackQueued = false;
+    }
+
+    public bool ChooseWeapon(int index)
+    {
+        if (availableWeapons == null || index < 0 || index >= availableWeapons.Length || availableWeapons[index] == null)
+            return false;
+
+        if (currentWeapon != null)
+            currentWeapon.SetSelected(false);
+
+        currentWeapon = availableWeapons[index];
+        currentWeapon.SetSelected(true);
+        attackTimer = currentWeapon.AttackInterval;
+        attackQueued = false;
+        gameplayActive = true;
+        return true;
+    }
+
+    public void SetGameplayActive(bool active)
+    {
+        gameplayActive = active;
+        attackQueued = false;
+        if (currentWeapon != null)
+            currentWeapon.SetSelected(active);
     }
 
     private Vector3 GetMouseDirection()
@@ -51,31 +89,17 @@ public class PlayerWeaponController : MonoBehaviour
         if (mainCamera == null)
             return Vector3.zero;
 
-        Ray ray = mainCamera.ScreenPointToRay(
-            Input.mousePosition
-        );
-
-        // 플레이어 높이와 같은 수평면을 기준으로 조준
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         Plane groundPlane = new Plane(
             Vector3.up,
-            new Vector3(
-                0f,
-                playerTransform.position.y,
-                0f
-            )
-        );
+            new Vector3(0f, playerTransform.position.y, 0f));
 
         if (!groundPlane.Raycast(ray, out float distance))
             return Vector3.zero;
 
-        Vector3 mouseWorldPosition =
-            ray.GetPoint(distance);
-
-        Vector3 direction =
-            mouseWorldPosition - playerTransform.position;
-
+        Vector3 mouseWorldPosition = ray.GetPoint(distance);
+        Vector3 direction = mouseWorldPosition - playerTransform.position;
         direction.y = 0f;
-
         return direction.normalized;
     }
 }
