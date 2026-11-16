@@ -17,10 +17,12 @@ public class PlayerController : MonoBehaviour
     private CharacterController controller;
     private Camera mainCamera;
     private float verticalVelocity;
+    private float shieldTimeRemaining;
 
     public float CurrentHealth { get; private set; }
     public float MaxHealth => maxHealth;
     public bool IsDead => CurrentHealth <= 0f;
+    public bool IsShielded => shieldTimeRemaining > 0f;
 
     private void Awake()
     {
@@ -31,12 +33,23 @@ public class PlayerController : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        if (IsDead || damage <= 0f)
+        if (IsDead || IsShielded || damage <= 0f)
             return;
 
         CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
         if (IsDead)
+        {
+            shieldTimeRemaining = 0f;
             enabled = false;
+        }
+    }
+
+    public void GrantShield(float duration)
+    {
+        if (IsDead || duration <= 0f)
+            return;
+
+        shieldTimeRemaining = Mathf.Max(shieldTimeRemaining, duration);
     }
 
     public void Heal(float amount)
@@ -50,6 +63,7 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        shieldTimeRemaining = Mathf.Max(0f, shieldTimeRemaining - Time.deltaTime);
         Move();
         LookAtMouse();
     }

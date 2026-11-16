@@ -233,9 +233,13 @@ public class BaseMonster : MonoBehaviour
         }
     }
 
-    protected virtual void ApplyKnockback(Vector3 direction,float power)
+    public virtual void ApplyKnockback(Vector3 direction, float power)
     {
-        // 추후 Rigidbody를 이용한 넉백 구현
+        if (power <= 0f || direction.sqrMagnitude <= 0.001f)
+            return;
+
+        direction.y = 0f;
+        transform.position += direction.normalized * power;
     }
 
     protected virtual void Die(bool dropReward = true)

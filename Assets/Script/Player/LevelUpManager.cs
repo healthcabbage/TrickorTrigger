@@ -6,9 +6,36 @@ using UnityEngine.UI;
 
 public class LevelUpManager : MonoBehaviour
 {
+    private struct UpgradeChoice
+    {
+        public BaseWeapon primaryWeapon;
+        public WeaponUpgradeType primaryUpgrade;
+        public AuxiliaryWeapon auxiliaryWeapon;
+        public AuxiliaryUpgradeType auxiliaryUpgrade;
+        public AuxiliaryWeapon newAuxiliaryWeapon;
+        public int newAuxiliaryIndex;
+
+        public static UpgradeChoice Primary(BaseWeapon weapon, WeaponUpgradeType upgrade)
+        {
+            return new UpgradeChoice { primaryWeapon = weapon, primaryUpgrade = upgrade };
+        }
+
+        public static UpgradeChoice Auxiliary(AuxiliaryWeapon weapon, AuxiliaryUpgradeType upgrade)
+        {
+            return new UpgradeChoice { auxiliaryWeapon = weapon, auxiliaryUpgrade = upgrade };
+        }
+
+        public static UpgradeChoice NewAuxiliary(AuxiliaryWeapon weapon, int index)
+        {
+            return new UpgradeChoice { newAuxiliaryWeapon = weapon, newAuxiliaryIndex = index };
+        }
+    }
+
     [Header("References")]
     [SerializeField] private PlayerExperience playerExperience;
     [SerializeField] private PlayerWeaponController weaponController;
+    [SerializeField] private PlayerAuxiliaryWeaponController auxiliaryWeaponController;
+    [SerializeField] private GameProgressionManager progressionManager;
     [SerializeField] private PlayerController playerController;
     [SerializeField] private GameObject levelUpPanel;
 
@@ -18,7 +45,10 @@ public class LevelUpManager : MonoBehaviour
     private RectTransform panelBackground;
     private readonly Queue<int> pendingLevelUps = new Queue<int>();
     private bool hasChosenWeapon;
+    private bool hasChosenAuxiliaryWeapons;
     private bool isChoosing;
+    private bool auxiliaryUnlockPending;
+    private readonly HashSet<int> chosenAuxiliaryIndices = new HashSet<int>();
 
     private void Awake()
     {
@@ -28,6 +58,12 @@ public class LevelUpManager : MonoBehaviour
             weaponController = FindObjectOfType<PlayerWeaponController>();
         if (playerController == null)
             playerController = FindObjectOfType<PlayerController>();
+        if (auxiliaryWeaponController == null)
+            auxiliaryWeaponController = FindObjectOfType<PlayerAuxiliaryWeaponController>();
+        if (auxiliaryWeaponController == null && playerController != null)
+            auxiliaryWeaponController = playerController.gameObject.AddComponent<PlayerAuxiliaryWeaponController>();
+        if (progressionManager == null)
+            progressionManager = FindObjectOfType<GameProgressionManager>();
 
         if (levelUpPanel != null)
         {
@@ -46,6 +82,8 @@ public class LevelUpManager : MonoBehaviour
 
         if (weaponController != null)
             weaponController.SetGameplayActive(false);
+        if (auxiliaryWeaponController != null)
+            auxiliaryWeaponController.SetGameplayActive(false);
         if (playerController != null)
             playerController.enabled = false;
 
@@ -56,17 +94,32 @@ public class LevelUpManager : MonoBehaviour
     {
         if (playerExperience != null)
             playerExperience.OnLevelUp += HandleLevelUp;
+        if (progressionManager != null)
+            progressionManager.AuxiliaryWeaponsUnlocked += HandleAuxiliaryWeaponsUnlocked;
     }
 
     private void OnDisable()
     {
         if (playerExperience != null)
             playerExperience.OnLevelUp -= HandleLevelUp;
+        if (progressionManager != null)
+            progressionManager.AuxiliaryWeaponsUnlocked -= HandleAuxiliaryWeaponsUnlocked;
     }
 
     private void Start()
     {
         ShowStartingWeaponChoices();
+    }
+
+    private void HandleAuxiliaryWeaponsUnlocked()
+    {
+        if (!hasChosenWeapon || hasChosenAuxiliaryWeapons || isChoosing)
+        {
+            auxiliaryUnlockPending = true;
+            return;
+        }
+
+        ShowAuxiliaryWeaponChoices();
     }
 
     private void ShowStartingWeaponChoices()
@@ -110,13 +163,77 @@ public class LevelUpManager : MonoBehaviour
 
         hasChosenWeapon = true;
         isChoosing = false;
-        if (playerController != null)
-            playerController.enabled = true;
+        weaponController.SetGameplayActive(false);
+        ContinueAfterChoice();
+    }
 
-        if (pendingLevelUps.Count > 0)
-            ShowNextUpgradeChoice();
-        else
+    private void ShowAuxiliaryWeaponChoices()
+    {
+        if (auxiliaryWeaponController == null || optionButtons == null)
+        {
+            Debug.LogError("보조 무기 선택 UI 또는 PlayerAuxiliaryWeaponController가 연결되지 않았습니다.", this);
             ContinueAfterChoice();
+            return;
+        }
+
+        AuxiliaryWeapon[] weapons = auxiliaryWeaponController.AvailableWeapons;
+        if (weapons == null || weapons.Length < PlayerAuxiliaryWeaponController.InitialChoiceCount ||
+            optionButtons.Length < weapons.Length)
+        {
+            Debug.LogError("보조 무기 4종 또는 선택 버튼이 모두 준비되지 않았습니다.", this);
+            ContinueAfterChoice();
+            return;
+        }
+
+        isChoosing = true;
+        Time.timeScale = 0f;
+        weaponController.SetGameplayActive(false);
+        auxiliaryWeaponController.SetGameplayActive(false);
+        if (playerController != null)
+            playerController.enabled = false;
+        levelUpPanel.SetActive(true);
+
+        chosenAuxiliaryIndices.Clear();
+        SetPanelTitle("보조 무기 해금! 1개를 선택하세요 (0/1)");
+        LayoutOptionCards(weapons.Length);
+        for (int i = 0; i < optionButtons.Length; i++)
+        {
+            if (i >= weapons.Length || weapons[i] == null)
+            {
+                optionButtons[i].gameObject.SetActive(false);
+                continue;
+            }
+
+            int weaponIndex = i;
+            string label = $"{weapons[i].DisplayName}\n{weapons[i].Description}\n클릭하여 선택";
+            BindOption(i, label, () => SelectAuxiliaryWeapon(weaponIndex));
+        }
+    }
+
+    private void SelectAuxiliaryWeapon(int weaponIndex)
+    {
+        if (auxiliaryWeaponController == null || chosenAuxiliaryIndices.Contains(weaponIndex) ||
+            !auxiliaryWeaponController.TryEquip(weaponIndex))
+            return;
+
+        chosenAuxiliaryIndices.Add(weaponIndex);
+        AuxiliaryWeapon selectedWeapon = auxiliaryWeaponController.AvailableWeapons[weaponIndex];
+        optionButtons[weaponIndex].interactable = false;
+        if (optionLabels[weaponIndex] != null)
+            optionLabels[weaponIndex].text = $"{selectedWeapon.DisplayName}\n선택됨 ✓";
+
+        if (chosenAuxiliaryIndices.Count >= PlayerAuxiliaryWeaponController.InitialChoiceCount)
+        {
+            hasChosenAuxiliaryWeapons = true;
+            isChoosing = false;
+            if (pendingLevelUps.Count > 0)
+                ShowNextUpgradeChoice();
+            else
+                ContinueAfterChoice();
+            return;
+        }
+
+        SetPanelTitle("보조 무기 1개를 선택하세요 (1/1)");
     }
 
     private void HandleLevelUp(int level)
@@ -132,7 +249,7 @@ public class LevelUpManager : MonoBehaviour
             return;
 
         BaseWeapon weapon = weaponController != null ? weaponController.CurrentWeapon : null;
-        while (pendingLevelUps.Count > 0 && (weapon == null || weapon.Level >= BaseWeapon.MaxLevel))
+        while (pendingLevelUps.Count > 0 && weapon == null)
             pendingLevelUps.Dequeue();
 
         if (pendingLevelUps.Count == 0)
@@ -141,8 +258,37 @@ public class LevelUpManager : MonoBehaviour
             return;
         }
 
-        List<WeaponUpgradeType> upgrades = weapon.GetAvailableUpgrades();
-        Shuffle(upgrades);
+        List<UpgradeChoice> upgrades = new List<UpgradeChoice>();
+        if (weapon.Level < BaseWeapon.MaxLevel)
+        {
+            foreach (WeaponUpgradeType upgrade in weapon.GetAvailableUpgrades())
+                upgrades.Add(UpgradeChoice.Primary(weapon, upgrade));
+        }
+
+        if (auxiliaryWeaponController != null)
+        {
+            foreach (AuxiliaryWeapon auxiliary in auxiliaryWeaponController.EquippedWeapons)
+            {
+                if (auxiliary.Level >= auxiliary.MaxLevel)
+                    continue;
+
+                foreach (AuxiliaryUpgradeType upgrade in auxiliary.GetAvailableUpgrades())
+                    upgrades.Add(UpgradeChoice.Auxiliary(auxiliary, upgrade));
+            }
+
+            if (hasChosenAuxiliaryWeapons)
+            {
+                AuxiliaryWeapon[] availableAuxiliary = auxiliaryWeaponController.AvailableWeapons;
+                for (int i = 0; i < availableAuxiliary.Length; i++)
+                {
+                    AuxiliaryWeapon candidate = availableAuxiliary[i];
+                    if (candidate == null || auxiliaryWeaponController.IsEquipped(candidate))
+                        continue;
+                    upgrades.Add(UpgradeChoice.NewAuxiliary(candidate, i));
+                }
+            }
+        }
+
         if (upgrades.Count == 0)
         {
             pendingLevelUps.Dequeue();
@@ -153,38 +299,96 @@ public class LevelUpManager : MonoBehaviour
         isChoosing = true;
         Time.timeScale = 0f;
         weaponController.SetGameplayActive(false);
+        if (auxiliaryWeaponController != null)
+            auxiliaryWeaponController.SetGameplayActive(false);
         if (playerController != null)
             playerController.enabled = false;
         levelUpPanel.SetActive(true);
 
-        int count = Mathf.Min(upgrades.Count, optionButtons.Length);
-        SetPanelTitle(weapon.Level == BaseWeapon.MaxLevel - 1
-            ? $"{weapon.WeaponName} · 최종 특수 강화 선택"
-            : $"{weapon.WeaponName} 강화 · Lv.{weapon.Level} → Lv.{weapon.Level + 1}");
-        LayoutOptionCards(count);
+        Shuffle(upgrades);
+        int optionCount = Mathf.Min(upgrades.Count, 3);
+        SetPanelTitle($"플레이어 레벨 {pendingLevelUps.Peek()} · 강화 선택");
+        LayoutOptionCards(optionCount);
         for (int i = 0; i < optionButtons.Length; i++)
         {
-            if (i >= count)
+            if (i >= optionCount)
             {
                 optionButtons[i].gameObject.SetActive(false);
                 continue;
             }
 
-            WeaponUpgradeType upgrade = upgrades[i];
-            string levelLabel = weapon.Level == BaseWeapon.MaxLevel - 1
-                ? "무기 Lv.7 최종 강화"
-                : $"무기 Lv.{weapon.Level} → Lv.{weapon.Level + 1}";
-            string label = $"{BaseWeapon.GetUpgradeLabel(upgrade)}\n{levelLabel}";
-            BindOption(i, label, () => SelectUpgrade(upgrade));
+            UpgradeChoice choice = upgrades[i];
+            if (choice.newAuxiliaryWeapon != null)
+            {
+                string label = $"새 보조 무기\n{choice.newAuxiliaryWeapon.DisplayName}\n{choice.newAuxiliaryWeapon.Description}\n선택 시 Lv.1부터 시작";
+                BindOption(i, label, () => ShowAuxiliaryAcquisitionChoices(choice));
+            }
+            else if (choice.primaryWeapon != null)
+            {
+                int nextLevel = choice.primaryWeapon.Level + 1;
+                string label = $"{BaseWeapon.GetUpgradeLabel(choice.primaryUpgrade)}\n{choice.primaryWeapon.WeaponName} Lv.{nextLevel}";
+                BindOption(i, label, () => SelectUpgrade(choice));
+            }
+            else
+            {
+                int nextLevel = choice.auxiliaryWeapon.Level + 1;
+                string label = $"{choice.auxiliaryWeapon.DisplayName}\n{choice.auxiliaryWeapon.GetUpgradeLabel(choice.auxiliaryUpgrade)}\nLv.{nextLevel}";
+                BindOption(i, label, () => SelectUpgrade(choice));
+            }
         }
     }
 
-    private void SelectUpgrade(WeaponUpgradeType upgrade)
+    private void SelectUpgrade(UpgradeChoice choice)
     {
-        BaseWeapon weapon = weaponController != null ? weaponController.CurrentWeapon : null;
-        if (weapon != null && weapon.ApplyUpgrade(upgrade) && pendingLevelUps.Count > 0)
+        bool applied = choice.primaryWeapon != null
+            ? choice.primaryWeapon.ApplyUpgrade(choice.primaryUpgrade)
+            : choice.auxiliaryWeapon != null && choice.auxiliaryWeapon.ApplyUpgrade(choice.auxiliaryUpgrade);
+        if (applied && pendingLevelUps.Count > 0)
             pendingLevelUps.Dequeue();
 
+        isChoosing = false;
+        ShowNextUpgradeChoice();
+    }
+
+    private void ShowAuxiliaryAcquisitionChoices(UpgradeChoice choice)
+    {
+        int equippedCount = auxiliaryWeaponController != null ? auxiliaryWeaponController.EquippedCount : 0;
+        SetPanelTitle($"새 보조 무기 · {choice.newAuxiliaryWeapon.DisplayName}");
+        int cursor = 0;
+        if (equippedCount < PlayerAuxiliaryWeaponController.MaxEquippedWeapons)
+            BindOption(cursor++, "빈 슬롯에 추가\n현재 보조 무기는 유지", () => CompleteAuxiliaryChange(-1, choice.newAuxiliaryIndex));
+
+        for (int slot = 0; slot < equippedCount; slot++)
+        {
+            int slotIndex = slot;
+            AuxiliaryWeapon current = auxiliaryWeaponController.GetEquippedAt(slot);
+            BindOption(cursor++, $"슬롯 {slot + 1}과 교체\n{current.DisplayName} Lv.{current.Level}",
+                () => CompleteAuxiliaryChange(slotIndex, choice.newAuxiliaryIndex));
+        }
+
+        BindOption(cursor++, "돌아가기\n강화 선택으로 이동", ReturnToUpgradeChoices);
+        for (int i = cursor; i < optionButtons.Length; i++)
+            optionButtons[i].gameObject.SetActive(false);
+        LayoutOptionCards(cursor);
+    }
+
+    private void CompleteAuxiliaryChange(int slotIndex, int weaponIndex)
+    {
+        bool changed = slotIndex < 0
+            ? auxiliaryWeaponController.TryEquip(weaponIndex)
+            : auxiliaryWeaponController.ReplaceEquipped(slotIndex, weaponIndex);
+        if (!changed)
+            return;
+
+        hasChosenAuxiliaryWeapons = true;
+        if (pendingLevelUps.Count > 0)
+            pendingLevelUps.Dequeue();
+        isChoosing = false;
+        ShowNextUpgradeChoice();
+    }
+
+    private void ReturnToUpgradeChoices()
+    {
         isChoosing = false;
         ShowNextUpgradeChoice();
     }
@@ -193,6 +397,7 @@ public class LevelUpManager : MonoBehaviour
     {
         Button button = optionButtons[index];
         button.gameObject.SetActive(true);
+        button.interactable = true;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(callback);
 
@@ -226,9 +431,11 @@ public class LevelUpManager : MonoBehaviour
             panelBackground.anchorMax = new Vector2(0.5f, 0.5f);
             panelBackground.pivot = new Vector2(0.5f, 0.5f);
             panelBackground.anchoredPosition = Vector2.zero;
-            panelBackground.sizeDelta = new Vector2(1020f, 560f);
+            panelBackground.sizeDelta = new Vector2(1320f, 560f);
             backgroundImage.color = new Color(0.07f, 0.09f, 0.14f, 0.97f);
         }
+
+        EnsureFourthOptionButton();
 
         for (int i = 0; i < optionButtons.Length; i++)
         {
@@ -289,6 +496,22 @@ public class LevelUpManager : MonoBehaviour
         }
     }
 
+    private void EnsureFourthOptionButton()
+    {
+        if (optionButtons.Length >= 4 || optionButtons.Length == 0)
+            return;
+
+        GameObject clone = Instantiate(optionButtons[0].gameObject, optionButtons[0].transform.parent, false);
+        clone.name = "Auxiliary Choice Button";
+        Button button = clone.GetComponent<Button>();
+        button.onClick.RemoveAllListeners();
+
+        Array.Resize(ref optionButtons, optionButtons.Length + 1);
+        Array.Resize(ref optionLabels, optionLabels.Length + 1);
+        optionButtons[optionButtons.Length - 1] = button;
+        optionLabels[optionLabels.Length - 1] = EnsureButtonLabel(button);
+    }
+
     private void SetPanelTitle(string title)
     {
         if (panelTitle != null)
@@ -337,22 +560,31 @@ public class LevelUpManager : MonoBehaviour
             levelUpPanel.SetActive(false);
 
         isChoosing = false;
+        if (auxiliaryUnlockPending && hasChosenWeapon && !hasChosenAuxiliaryWeapons)
+        {
+            auxiliaryUnlockPending = false;
+            ShowAuxiliaryWeaponChoices();
+            return;
+        }
+
         if (hasChosenWeapon)
         {
             if (playerController != null)
                 playerController.enabled = true;
             if (weaponController != null)
                 weaponController.SetGameplayActive(true);
+            if (auxiliaryWeaponController != null && hasChosenAuxiliaryWeapons)
+                auxiliaryWeaponController.SetGameplayActive(true);
             Time.timeScale = 1f;
         }
     }
 
-    private static void Shuffle(List<WeaponUpgradeType> values)
+    private static void Shuffle<T>(List<T> values)
     {
         for (int i = values.Count - 1; i > 0; i--)
         {
             int j = UnityEngine.Random.Range(0, i + 1);
-            WeaponUpgradeType temp = values[i];
+            T temp = values[i];
             values[i] = values[j];
             values[j] = temp;
         }

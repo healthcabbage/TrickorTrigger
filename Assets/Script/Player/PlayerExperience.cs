@@ -10,7 +10,7 @@ public class PlayerExperience : MonoBehaviour
     [Header("Experience")]
     [SerializeField] private int currentExperience = 0;
     [SerializeField] private int baseRequiredExperience = 10;
-    [SerializeField] private float experienceGrowthRate = 1.2f;
+    [SerializeField] private float experienceGrowthRate = 1.3f;
 
     public int CurrentLevel => currentLevel;
     public int CurrentExperience => currentExperience;
