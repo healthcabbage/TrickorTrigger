@@ -12,6 +12,13 @@ public class BossMonster : BaseMonster
         Recovery
     }
 
+    private enum SpecialSkill
+    {
+        None,
+        Charge,
+        Shockwave
+    }
+
     [Header("Boss Data")]
     [SerializeField] private BossStats bossStats;
 
@@ -21,15 +28,27 @@ public class BossMonster : BaseMonster
     private BossAction action;
     private float actionTimer;
     private float normalAttackTimer;
-    private float specialAttackTimer;
+    private float chargeCooldownTimer;
+    private float shockwaveCooldownTimer;
+    private int normalAttackCountSinceSpecial;
+    private SpecialSkill lastSpecialSkill;
     private float chargeTravelled;
     private Vector3 chargeDirection;
+    private Vector3 chargeStartPosition;
     private bool chargeHitPlayer;
+    private float shockwaveEffectTimer;
 
     private LineRenderer normalTelegraph;
     private LineRenderer chargeTelegraph;
     private LineRenderer shockwaveTelegraph;
+    private LineRenderer skillGaugeBackground;
+    private LineRenderer skillGaugeFill;
+    private LineRenderer chargeTrail;
+    private LineRenderer shockwaveEffect;
     private Material telegraphMaterial;
+
+    [SerializeField, Min(0f)] private float skillGaugeHeight = 2.5f;
+    private const float ShockwaveEffectDuration = 0.45f;
 
     public override void InitializeMonster()
     {
@@ -73,8 +92,8 @@ public class BossMonster : BaseMonster
             targetPlayer = FindObjectOfType<PlayerController>();
 
         normalAttackTimer += Time.deltaTime;
-        if (targetPlayer != null)
-            specialAttackTimer += Time.deltaTime;
+        chargeCooldownTimer = Mathf.Max(0f, chargeCooldownTimer - Time.deltaTime);
+        shockwaveCooldownTimer = Mathf.Max(0f, shockwaveCooldownTimer - Time.deltaTime);
 
         switch (action)
         {
@@ -103,11 +122,10 @@ public class BossMonster : BaseMonster
 
     private void UpdateApproach()
     {
-        if (targetPlayer != null && specialAttackTimer >= bossStats.specialAttackCooldown)
-        {
-            BeginChargeWindup(Flatten(targetPlayer.transform.position - transform.position));
+        if (targetPlayer != null &&
+            normalAttackCountSinceSpecial >= Mathf.Max(1, bossStats.normalAttacksBeforeSpecial) &&
+            TryBeginReadySpecialSkill())
             return;
-        }
 
         if (targetPumpkin == null)
             return;
@@ -142,6 +160,7 @@ public class BossMonster : BaseMonster
         if (actionTimer < bossStats.normalAttackWindup)
             return;
 
+        normalAttackCountSinceSpecial++;
         DealConeDamage();
         BeginRecovery(0.35f);
     }
@@ -159,6 +178,35 @@ public class BossMonster : BaseMonster
         }
     }
 
+    private bool TryBeginReadySpecialSkill()
+    {
+        bool canCharge = chargeCooldownTimer <= 0f;
+        bool canShockwave = shockwaveCooldownTimer <= 0f;
+        if (!canCharge && !canShockwave)
+            return false;
+
+        SpecialSkill nextSkill;
+        if (canCharge && canShockwave)
+            nextSkill = lastSpecialSkill == SpecialSkill.Charge ? SpecialSkill.Shockwave : SpecialSkill.Charge;
+        else
+            nextSkill = canCharge ? SpecialSkill.Charge : SpecialSkill.Shockwave;
+
+        normalAttackCountSinceSpecial = 0;
+        lastSpecialSkill = nextSkill;
+        if (nextSkill == SpecialSkill.Charge)
+        {
+            chargeCooldownTimer = bossStats.chargeCooldown;
+            BeginChargeWindup(Flatten(targetPlayer.transform.position - transform.position));
+        }
+        else
+        {
+            shockwaveCooldownTimer = bossStats.shockwaveCooldown;
+            BeginShockwaveWindup();
+        }
+
+        return true;
+    }
+
     private void BeginChargeWindup(Vector3 toPlayer)
     {
         if (toPlayer.sqrMagnitude < 0.001f)
@@ -168,26 +216,36 @@ public class BossMonster : BaseMonster
         Face(chargeDirection);
         action = BossAction.ChargeWindup;
         actionTimer = 0f;
-        specialAttackTimer = 0f;
         chargeTravelled = 0f;
         chargeHitPlayer = false;
     }
 
     private void UpdateChargeWindup()
     {
+        if (targetPlayer != null)
+        {
+            Vector3 toPlayer = Flatten(targetPlayer.transform.position - transform.position);
+            if (toPlayer.sqrMagnitude > 0.001f)
+            {
+                chargeDirection = toPlayer.normalized;
+                Face(chargeDirection);
+            }
+        }
+
         actionTimer += Time.deltaTime;
         if (actionTimer < bossStats.chargeWindup)
             return;
 
         action = BossAction.Charge;
         actionTimer = 0f;
+        chargeStartPosition = transform.position;
     }
 
     private void UpdateCharge()
     {
         if (targetPlayer == null)
         {
-            BeginShockwaveWindup();
+            BeginRecovery(bossStats.recoveryDuration);
             return;
         }
 
@@ -205,7 +263,7 @@ public class BossMonster : BaseMonster
         transform.position = to;
         chargeTravelled += step;
         if (chargeTravelled >= bossStats.chargeDistance)
-            BeginShockwaveWindup();
+            BeginRecovery(bossStats.recoveryDuration);
     }
 
     private void BeginShockwaveWindup()
@@ -227,6 +285,7 @@ public class BossMonster : BaseMonster
         }
 
         BeginRecovery(bossStats.recoveryDuration);
+        shockwaveEffectTimer = ShockwaveEffectDuration;
     }
 
     private void BeginRecovery(float duration)
@@ -260,10 +319,18 @@ public class BossMonster : BaseMonster
         normalTelegraph = CreateTelegraphLine("Normal Attack Warning", new Color(1f, 0.55f, 0.05f, 0.9f));
         chargeTelegraph = CreateTelegraphLine("Charge Warning", new Color(1f, 0.1f, 0.1f, 0.9f));
         shockwaveTelegraph = CreateTelegraphLine("Shockwave Warning", new Color(0.1f, 0.75f, 1f, 0.9f));
+        skillGaugeBackground = CreateTelegraphLine("Special Skill Gauge Background", new Color(0.12f, 0.12f, 0.12f, 0.95f), 0.13f);
+        skillGaugeFill = CreateTelegraphLine("Special Skill Gauge Fill", new Color(1f, 0.8f, 0.05f, 1f), 0.09f);
+        chargeTrail = CreateTelegraphLine("Charge Attack Trail", new Color(1f, 0.15f, 0.05f, 0.9f), 0.22f);
+        shockwaveEffect = CreateTelegraphLine("Shockwave Effect", new Color(1f, 0.9f, 0.35f, 1f), 0.18f);
         SetTelegraphsVisible(false, false, false);
+        skillGaugeBackground.enabled = false;
+        skillGaugeFill.enabled = false;
+        chargeTrail.enabled = false;
+        shockwaveEffect.enabled = false;
     }
 
-    private LineRenderer CreateTelegraphLine(string objectName, Color color)
+    private LineRenderer CreateTelegraphLine(string objectName, Color color, float width = 0.07f)
     {
         GameObject lineObject = new GameObject(objectName);
         lineObject.transform.SetParent(transform, false);
@@ -271,7 +338,7 @@ public class BossMonster : BaseMonster
         LineRenderer line = lineObject.AddComponent<LineRenderer>();
         line.useWorldSpace = true;
         line.loop = false;
-        line.widthMultiplier = 0.07f;
+        line.widthMultiplier = width;
         line.startColor = color;
         line.endColor = color;
         line.sharedMaterial = telegraphMaterial;
@@ -300,6 +367,59 @@ public class BossMonster : BaseMonster
         if (showShockwave)
             SetLinePoints(shockwaveTelegraph,
                 CreateCirclePoints(center, bossStats.shockwaveRadius, 48));
+
+        UpdateSkillGauge();
+        UpdateAttackEffects(center);
+    }
+
+    private void UpdateSkillGauge()
+    {
+        bool normalCharging = action == BossAction.NormalAttackWindup;
+        bool chargeCharging = action == BossAction.ChargeWindup;
+        bool shockwaveCharging = action == BossAction.ShockwaveWindup;
+        bool showGauge = normalCharging || chargeCharging || shockwaveCharging;
+        skillGaugeBackground.enabled = showGauge;
+        skillGaugeFill.enabled = showGauge;
+        if (!showGauge)
+            return;
+
+        float duration = normalCharging
+            ? bossStats.normalAttackWindup
+            : chargeCharging ? bossStats.chargeWindup : bossStats.shockwaveWindup;
+        float progress = duration <= 0f ? 1f : Mathf.Clamp01(actionTimer / duration);
+        Vector3 center = transform.position + Vector3.up * skillGaugeHeight;
+        const float halfWidth = 0.8f;
+        Vector3 left = center - transform.right * halfWidth;
+        Vector3 right = center + transform.right * halfWidth;
+        SetLinePoints(skillGaugeBackground, new[] { left, right });
+        SetLinePoints(skillGaugeFill, new[] { left, Vector3.Lerp(left, right, progress) });
+    }
+
+    private void UpdateAttackEffects(Vector3 center)
+    {
+        bool charging = action == BossAction.Charge;
+        chargeTrail.enabled = charging;
+        if (charging)
+        {
+            SetLinePoints(chargeTrail, new[]
+            {
+                chargeStartPosition + Vector3.up * 0.12f,
+                transform.position + Vector3.up * 0.12f
+            });
+        }
+
+        if (shockwaveEffectTimer > 0f)
+        {
+            shockwaveEffectTimer = Mathf.Max(0f, shockwaveEffectTimer - Time.deltaTime);
+            float progress = 1f - shockwaveEffectTimer / ShockwaveEffectDuration;
+            shockwaveEffect.enabled = true;
+            SetLinePoints(shockwaveEffect,
+                CreateCirclePoints(center, bossStats.shockwaveRadius * progress, 48));
+        }
+        else
+        {
+            shockwaveEffect.enabled = false;
+        }
     }
 
     private void UpdateConeTelegraph(Vector3 center)
@@ -395,8 +515,12 @@ public class BossMonster : BaseMonster
         action = BossAction.Approach;
         actionTimer = 0f;
         normalAttackTimer = bossStats != null ? bossStats.normalAttackCooldown : 0f;
-        specialAttackTimer = 0f;
+        chargeCooldownTimer = 0f;
+        shockwaveCooldownTimer = 0f;
+        normalAttackCountSinceSpecial = 0;
+        lastSpecialSkill = SpecialSkill.None;
         chargeTravelled = 0f;
         chargeHitPlayer = false;
+        shockwaveEffectTimer = 0f;
     }
 }
