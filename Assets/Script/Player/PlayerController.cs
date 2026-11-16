@@ -4,6 +4,9 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    [Header("체력")]
+    [SerializeField, Min(1f)] private float maxHealth = 100f;
+
     [Header("이동")]
     [SerializeField] private float moveSpeed;
     [SerializeField] private float gravity = -20f;
@@ -15,10 +18,24 @@ public class PlayerController : MonoBehaviour
     private Camera mainCamera;
     private float verticalVelocity;
 
+    public float CurrentHealth { get; private set; }
+    public bool IsDead => CurrentHealth <= 0f;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         mainCamera = Camera.main;
+        CurrentHealth = maxHealth;
+    }
+
+    public void TakeDamage(float damage)
+    {
+        if (IsDead || damage <= 0f)
+            return;
+
+        CurrentHealth = Mathf.Max(0f, CurrentHealth - damage);
+        if (IsDead)
+            enabled = false;
     }
 
     // Update is called once per frame

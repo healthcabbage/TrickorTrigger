@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8d48e54efc406d985a6fd3cc4c206f, type: 3}
+  m_Name: MiddleBoss
+  m_EditorClassIdentifier: Assembly-CSharp::BossStats
+  bossType: 0
+  bossName: "\uC601\uD63C\uC218\uD655\uC790"
+  maxHealth: 500
+  moveSpeed: 5
+  normalAttackDamage: 100
+  normalAttackRange: 10
+  normalAttackAngle: 75
+  normalAttackCooldown: 2
+  normalAttackWindup: 3
+  normalAttacksBeforeSpecial: 3
+  chargeCooldown: 12
+  chargeWindup: 1.5
+  chargeSpeed: 30
+  chargeDistance: 20
+  chargeHitRadius: 1
+  chargeDamage: 25
+  shockwaveCooldown: 18
+  shockwaveWindup: 0.5
+  shockwaveRadius: 8
+  shockwaveDamage: 30
+  recoveryDuration: 5

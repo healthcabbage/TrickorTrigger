@@ -30,6 +30,7 @@ public class BaseMonster : MonoBehaviour
 
     protected bool isDead;
     protected bool isInitialized;
+    private float attackTimer;
 
     public float CurrentHealth => _currentHealth;
     public bool IsDead => isDead;
@@ -160,14 +161,35 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void UpdateAttack()
     {
+        if (!IsTargetInAttackRange())
+            return;
+
+        attackTimer += Time.deltaTime;
+        if (attackTimer < _monsterStats.attackInterval)
+            return;
+
+        attackTimer = 0f;
+        Attack();
+    }
+
+    protected bool IsTargetInAttackRange()
+    {
         if (targetPumpkin == null)
         {
             ChangeState(MonsterState.Idle);
-            return;
+            return false;
         }
 
-        //공격 로직은 자식에게서
+        if (Vector3.Distance(transform.position, targetPumpkin.transform.position) > _monsterStats.attackRange)
+        {
+            ChangeState(MonsterState.Move);
+            return false;
+        }
+
+        return true;
     }
+
+    protected virtual void Attack() { }
 
     protected virtual void UpdateDead()
     {
@@ -216,7 +238,7 @@ public class BaseMonster : MonoBehaviour
         // 추후 Rigidbody를 이용한 넉백 구현
     }
 
-    protected virtual void Die()
+    protected virtual void Die(bool dropReward = true)
     {
         if (isDead)
             return;
@@ -225,8 +247,8 @@ public class BaseMonster : MonoBehaviour
 
         ChangeState(MonsterState.Dead);
 
-        //보상 지급
-        DropReward();
+        if (dropReward)
+            DropReward();
 
         Destroy(gameObject);
     }
@@ -317,6 +339,7 @@ public class BaseMonster : MonoBehaviour
     public virtual void OnSpawn()
     {
         targetPumpkin = null;
+        attackTimer = 0f;
 
         InitializeMonster();
     }
