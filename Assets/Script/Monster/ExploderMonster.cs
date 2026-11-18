@@ -16,9 +16,6 @@ public class ExploderMonster : BaseMonster
             return;
         }
 
-        if (fuseTimer <= 0f)
-            PlayAttackAnimation();
-
         fuseTimer += Time.deltaTime;
         if (fuseTimer >= fuseDuration)
             Explode();

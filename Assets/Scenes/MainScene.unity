@@ -499,6 +499,7 @@ MonoBehaviour:
   _monsterStats: {fileID: 0}
   _monsterReward: {fileID: 11400000, guid: b6adcfb62e3ef5a4997e6abe95a56ce3, type: 2}
   targetPumpkin: {fileID: 896211024}
+  turnSpeed: 360
   dropRadius: 1.5
   minDropDistance: 0.5
   maxPositionAttempts: 30
@@ -1368,7 +1369,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &672628748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1382,8 +1383,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
   monsterPrefabs:
-  - {fileID: -1736135510346818329, guid: 14fb1b49b17d3634caffd6eacacb1a4d, type: 3}
-  - {fileID: 933135920589578783, guid: fd7649a9edc47ed4b9904e71eae5cd6e, type: 3}
+  - {fileID: 7824229759183533415, guid: 74bcfced07b7e344ea3433665e09cbdd, type: 3}
   targetPumpkin: {fileID: 896211024}
   spawnPoint: {fileID: 1978023846}
   spawnInterval: 2

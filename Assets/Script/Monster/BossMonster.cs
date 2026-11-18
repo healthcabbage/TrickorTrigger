@@ -22,10 +22,6 @@ public class BossMonster : BaseMonster
     [Header("Boss Data")]
     [SerializeField] private BossStats bossStats;
 
-    [Header("Animation Triggers")]
-    [SerializeField] private string chargeAnimationTrigger = "Charge";
-    [SerializeField] private string shockwaveAnimationTrigger = "Shockwave";
-
     [Header("Special Attack Target")]
     [SerializeField] private PlayerController targetPlayer;
 
@@ -153,7 +149,6 @@ public class BossMonster : BaseMonster
     private void BeginNormalAttackWindup(Vector3 direction)
     {
         Face(direction);
-        PlayAttackAnimation();
         action = BossAction.NormalAttackWindup;
         actionTimer = 0f;
         normalAttackTimer = 0f;
@@ -219,7 +214,6 @@ public class BossMonster : BaseMonster
 
         chargeDirection = toPlayer.normalized;
         Face(chargeDirection);
-        PlayCustomAnimationTrigger(chargeAnimationTrigger);
         action = BossAction.ChargeWindup;
         actionTimer = 0f;
         chargeTravelled = 0f;
@@ -274,7 +268,6 @@ public class BossMonster : BaseMonster
 
     private void BeginShockwaveWindup()
     {
-        PlayCustomAnimationTrigger(shockwaveAnimationTrigger);
         action = BossAction.ShockwaveWindup;
         actionTimer = 0f;
     }

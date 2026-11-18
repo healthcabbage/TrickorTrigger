@@ -23,8 +23,8 @@ public class BaseMonster : MonoBehaviour
     [Header("Target")]
     [SerializeField] protected Pumpkin targetPumpkin;
 
-    [Header("Animation")]
-    [SerializeField] private MonsterAnimationDriver animationDriver;
+    [Header("Turning")]
+    [SerializeField, Min(0f)] private float turnSpeed = 360f;
 
     [Header("Drop Settings")]
     [SerializeField] private float dropRadius = 1.5f;
@@ -41,13 +41,6 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void Awake()
     {
-        if (animationDriver == null)
-            animationDriver = GetComponentInChildren<MonsterAnimationDriver>(true);
-        if (animationDriver == null && GetComponentInChildren<Animator>(true) != null)
-            animationDriver = gameObject.AddComponent<MonsterAnimationDriver>();
-        if (animationDriver != null)
-            animationDriver.Initialize();
-
         InitializeMonster();
     }
 
@@ -158,6 +151,8 @@ public class BaseMonster : MonoBehaviour
             return;
         }
 
+        FaceTargetPumpkin();
+
         float distance = Vector3.Distance(transform.position, targetPumpkin.transform.position);
 
         if (distance <= _monsterStats.attackRange)
@@ -171,6 +166,8 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void UpdateAttack()
     {
+        FaceTargetPumpkin();
+
         if (!IsTargetInAttackRange())
             return;
 
@@ -179,22 +176,24 @@ public class BaseMonster : MonoBehaviour
             return;
 
         attackTimer = 0f;
-        PlayAttackAnimation();
         Attack();
     }
 
-    /// <summary>공통 공격 애니메이션을 재생합니다. 개별 몬스터의 공격 시작 지점에서도 호출할 수 있습니다.</summary>
-    protected void PlayAttackAnimation()
+    protected virtual void FaceTargetPumpkin()
     {
-        if (animationDriver != null)
-            animationDriver.PlayAttack();
-    }
+        if (targetPumpkin == null)
+            return;
 
-    /// <summary>몬스터별 Animator에 추가한 트리거를 재생합니다.</summary>
-    protected void PlayCustomAnimationTrigger(string triggerName)
-    {
-        if (animationDriver != null)
-            animationDriver.PlayCustomTrigger(triggerName);
+        Vector3 direction = targetPumpkin.transform.position - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= 0.001f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation,
+            targetRotation,
+            turnSpeed * Time.deltaTime);
     }
 
     protected bool IsTargetInAttackRange()
@@ -245,9 +244,6 @@ public class BaseMonster : MonoBehaviour
     //몬스터가 공격을 받았을 때 호출되는 로직
     protected virtual void OnHit(DamageInfo damageInfo)
     {
-        if (animationDriver != null)
-            animationDriver.PlayHit();
-
         // 피격 효과
         Debug.Log($"{gameObject.name} 피격!");
 
@@ -279,22 +275,10 @@ public class BaseMonster : MonoBehaviour
 
         ChangeState(MonsterState.Dead);
 
-        bool playDeathAnimation = animationDriver != null && animationDriver.PlayDeath();
-
         if (dropReward)
             DropReward();
 
-        if (playDeathAnimation)
-        {
-            Collider[] colliders = GetComponentsInChildren<Collider>(true);
-            foreach (Collider monsterCollider in colliders)
-                monsterCollider.enabled = false;
-            Destroy(gameObject, animationDriver.DeathDestroyDelay);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        Destroy(gameObject);
     }
 
     protected virtual void DropReward()
@@ -355,6 +339,7 @@ public class BaseMonster : MonoBehaviour
 
             Vector3 candidate = transform.position +
                 new Vector3(randomOffset.x, 0f, randomOffset.y);
+            candidate.y = 0.5f;
 
             bool isOverlapping = false;
 
@@ -377,7 +362,9 @@ public class BaseMonster : MonoBehaviour
         }
 
         // 적절한 위치를 찾지 못하면 마지막 위치 반환
-        return transform.position;
+        Vector3 fallbackPosition = transform.position;
+        fallbackPosition.y = 0.5f;
+        return fallbackPosition;
     }
 
     public virtual void OnSpawn()
@@ -386,8 +373,6 @@ public class BaseMonster : MonoBehaviour
         attackTimer = 0f;
 
         InitializeMonster();
-        if (animationDriver != null)
-            animationDriver.ResetForSpawn();
     }
 
     public virtual void OnDespawn()
