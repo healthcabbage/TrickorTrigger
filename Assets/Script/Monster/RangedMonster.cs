@@ -12,6 +12,7 @@ public class RangedMonster : BaseMonster
 
     protected override void Attack()
     {
+        PlayAttackAnimation();
         if (targetPumpkin == null)
             return;
 

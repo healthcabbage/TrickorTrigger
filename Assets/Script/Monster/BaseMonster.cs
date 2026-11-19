@@ -1,5 +1,6 @@
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 public enum MonsterState
@@ -34,6 +35,11 @@ public class BaseMonster : MonoBehaviour
     protected bool isDead;
     protected bool isInitialized;
     private float attackTimer;
+    private Animator monsterAnimator;
+    private static readonly int MoveSpeedId = Animator.StringToHash("MoveSpeed");
+    private static readonly int AttackId = Animator.StringToHash("Attack");
+    private static readonly int DeathId = Animator.StringToHash("Death");
+    private static readonly int HitId = Animator.StringToHash("Hit");
 
     public float CurrentHealth => _currentHealth;
     public bool IsDead => isDead;
@@ -41,6 +47,7 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void Awake()
     {
+        monsterAnimator = GetComponentInChildren<Animator>();
         InitializeMonster();
     }
 
@@ -64,6 +71,8 @@ public class BaseMonster : MonoBehaviour
                 UpdateDead();
                 break;
         }
+
+        UpdateAnimatorMovement();
 
         if (Input.GetKeyDown(KeyCode.K))
         {
@@ -215,6 +224,33 @@ public class BaseMonster : MonoBehaviour
 
     protected virtual void Attack() { }
 
+    protected void PlayAttackAnimation()
+    {
+        if (monsterAnimator == null)
+            return;
+
+        monsterAnimator.SetTrigger(AttackId);
+    }
+
+    private void UpdateAnimatorMovement()
+    {
+        if (monsterAnimator == null || isDead)
+            return;
+
+        monsterAnimator.SetFloat(MoveSpeedId, _currentState == MonsterState.Move ? 1f : 0f);
+    }
+
+    private float GetAnimationDuration(string clipName, float fallback)
+    {
+        if (monsterAnimator == null || monsterAnimator.runtimeAnimatorController == null)
+            return fallback;
+
+        foreach (AnimationClip clip in monsterAnimator.runtimeAnimatorController.animationClips)
+            if (clip.name == clipName)
+                return clip.length;
+        return fallback;
+    }
+
     protected virtual void UpdateDead()
     {
         
@@ -244,6 +280,8 @@ public class BaseMonster : MonoBehaviour
     //몬스터가 공격을 받았을 때 호출되는 로직
     protected virtual void OnHit(DamageInfo damageInfo)
     {
+        if (monsterAnimator != null)
+            monsterAnimator.SetTrigger(HitId);
         // 피격 효과
         Debug.Log($"{gameObject.name} 피격!");
 
@@ -278,6 +316,20 @@ public class BaseMonster : MonoBehaviour
         if (dropReward)
             DropReward();
 
+        if (monsterAnimator != null)
+        {
+            monsterAnimator.SetBool(DeathId, true);
+            StartCoroutine(DestroyAfterDeathAnimation());
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private IEnumerator DestroyAfterDeathAnimation()
+    {
+        yield return new WaitForSeconds(GetAnimationDuration("Bat@death", 1f));
         Destroy(gameObject);
     }
 

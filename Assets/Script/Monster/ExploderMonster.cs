@@ -7,13 +7,21 @@ public class ExploderMonster : BaseMonster
     [SerializeField] private float explosionRadius = 2f;
 
     private float fuseTimer;
+    private bool attackAnimationPlayed;
 
     protected override void UpdateAttack()
     {
         if (!IsTargetInAttackRange())
         {
             fuseTimer = 0f;
+            attackAnimationPlayed = false;
             return;
+        }
+
+        if (!attackAnimationPlayed)
+        {
+            PlayAttackAnimation();
+            attackAnimationPlayed = true;
         }
 
         fuseTimer += Time.deltaTime;
@@ -39,5 +47,6 @@ public class ExploderMonster : BaseMonster
     {
         base.OnSpawn();
         fuseTimer = 0f;
+        attackAnimationPlayed = false;
     }
 }
