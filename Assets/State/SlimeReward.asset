@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cfebe13c9a7b6a43b8f7a1871d52323, type: 3}
   m_Name: SlimeReward
   m_EditorClassIdentifier: Assembly-CSharp::MonsterReward
-  coinPrefab: {fileID: 7243797977273433284, guid: abd1f615776ce56409e0810bc0745396, type: 3}
+  coinPrefab: {fileID: 611114333628088226, guid: a4797a140ea48b5468e69bd422cabe5d, type: 3}
   coindropcount: 1
   coinamountdrop: 10
-  candyPrefab: {fileID: 7243797977273433284, guid: abd1f615776ce56409e0810bc0745396, type: 3}
+  candyPrefab: {fileID: 7215459414239627638, guid: d7bf27c0bbf29f84a9be7806bb7495e7, type: 3}
   candydropcount: 1
   candyamountdrop: 10
