@@ -1911,7 +1911,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3474397170279342199}
@@ -2004,6 +2004,7 @@ MonoBehaviour:
   _monsterStats: {fileID: 11400000, guid: c27f775ffa8c7414987a45fa1ba4e66b, type: 2}
   _monsterReward: {fileID: 11400000, guid: b6adcfb62e3ef5a4997e6abe95a56ce3, type: 2}
   targetPumpkin: {fileID: 0}
+  turnSpeed: 360
   dropRadius: 1.5
   minDropDistance: 0.5
   maxPositionAttempts: 30
