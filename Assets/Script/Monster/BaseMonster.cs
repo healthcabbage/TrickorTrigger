@@ -48,6 +48,9 @@ public class BaseMonster : MonoBehaviour
     protected virtual void Awake()
     {
         monsterAnimator = GetComponentInChildren<Animator>();
+        if (monsterAnimator != null && monsterAnimator.runtimeAnimatorController == null)
+            monsterAnimator = null;
+
         InitializeMonster();
     }
 
@@ -228,7 +231,6 @@ public class BaseMonster : MonoBehaviour
     {
         if (monsterAnimator == null)
             return;
-
         monsterAnimator.SetTrigger(AttackId);
     }
 
@@ -240,15 +242,18 @@ public class BaseMonster : MonoBehaviour
         monsterAnimator.SetFloat(MoveSpeedId, _currentState == MonsterState.Move ? 1f : 0f);
     }
 
-    private float GetAnimationDuration(string clipName, float fallback)
+    private float GetDeathAnimationDuration()
     {
         if (monsterAnimator == null || monsterAnimator.runtimeAnimatorController == null)
-            return fallback;
+            return 1f;
 
         foreach (AnimationClip clip in monsterAnimator.runtimeAnimatorController.animationClips)
-            if (clip.name == clipName)
+        {
+            if (clip.name.IndexOf("death", System.StringComparison.OrdinalIgnoreCase) >= 0)
                 return clip.length;
-        return fallback;
+        }
+
+        return 1f;
     }
 
     protected virtual void UpdateDead()
@@ -370,7 +375,7 @@ public class BaseMonster : MonoBehaviour
 
     private IEnumerator DestroyAfterDeathAnimation()
     {
-        yield return new WaitForSeconds(GetAnimationDuration("Bat@death", 1f));
+        yield return new WaitForSeconds(GetDeathAnimationDuration());
         Destroy(gameObject);
     }
 
