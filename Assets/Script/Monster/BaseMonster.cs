@@ -312,6 +312,8 @@ public class BaseMonster : MonoBehaviour
         isDead = true;
 
         ChangeState(MonsterState.Dead);
+        StopDeathPhysics();
+        IgnorePlayerCollision();
 
         if (dropReward)
             DropReward();
@@ -324,6 +326,45 @@ public class BaseMonster : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    private void StopDeathPhysics()
+    {
+        // 사망 시 기존 관성만 제거하고 중력/바닥 충돌은 유지해
+        // 공중에 있던 박쥐가 바닥 위에 착지할 수 있도록 합니다.
+        Rigidbody[] rigidbodies = GetComponentsInChildren<Rigidbody>(true);
+        foreach (Rigidbody monsterRigidbody in rigidbodies)
+        {
+            monsterRigidbody.linearVelocity = Vector3.zero;
+            monsterRigidbody.angularVelocity = Vector3.zero;
+            monsterRigidbody.isKinematic = false;
+            monsterRigidbody.useGravity = true;
+            monsterRigidbody.detectCollisions = true;
+            monsterRigidbody.WakeUp();
+        }
+    }
+
+    private void IgnorePlayerCollision()
+    {
+        PlayerController player = FindObjectOfType<PlayerController>();
+        if (player == null)
+            return;
+
+        Collider[] monsterColliders = GetComponentsInChildren<Collider>(true);
+        Collider[] playerColliders = player.GetComponentsInChildren<Collider>(true);
+
+        // 플레이어와의 충돌만 무시합니다. 지형이나 다른 몬스터와의 충돌은 유지됩니다.
+        foreach (Collider monsterCollider in monsterColliders)
+        {
+            if (monsterCollider == null || !monsterCollider.enabled)
+                continue;
+
+            foreach (Collider playerCollider in playerColliders)
+            {
+                if (playerCollider != null && playerCollider.enabled)
+                    Physics.IgnoreCollision(monsterCollider, playerCollider, true);
+            }
         }
     }
 
