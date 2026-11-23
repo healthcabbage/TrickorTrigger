@@ -32,10 +32,15 @@ public class BaseMonster : MonoBehaviour
     [SerializeField] private float minDropDistance = 0.5f;
     [SerializeField] private int maxPositionAttempts = 30;
 
+    [Header("Hit Reaction")]
+    [SerializeField] private bool ignoreKnockback;
+
     protected bool isDead;
     protected bool isInitialized;
     private float attackTimer;
     private Animator monsterAnimator;
+    private Vector3 deathWorldPosition;
+    private bool lockDeathPosition;
     private static readonly int MoveSpeedId = Animator.StringToHash("MoveSpeed");
     private static readonly int AttackId = Animator.StringToHash("Attack");
     private static readonly int DeathId = Animator.StringToHash("Death");
@@ -81,6 +86,12 @@ public class BaseMonster : MonoBehaviour
         {
             Die();
         }
+    }
+
+    protected virtual void LateUpdate()
+    {
+        if (lockDeathPosition)
+            transform.position = deathWorldPosition;
     }
 
     public virtual void InitializeMonster()
@@ -274,12 +285,13 @@ public class BaseMonster : MonoBehaviour
 
         _currentHealth = Mathf.Max(0f, _currentHealth);
 
-        OnHit(damage);
-
         if (_currentHealth <= 0f)
         {
             Die();
+            return;
         }
+
+        OnHit(damage);
     }
 
     //몬스터가 공격을 받았을 때 호출되는 로직
@@ -302,7 +314,7 @@ public class BaseMonster : MonoBehaviour
 
     public virtual void ApplyKnockback(Vector3 direction, float power)
     {
-        if (power <= 0f || direction.sqrMagnitude <= 0.001f)
+        if (ignoreKnockback || isDead || power <= 0f || direction.sqrMagnitude <= 0.001f)
             return;
 
         direction.y = 0f;
@@ -315,6 +327,8 @@ public class BaseMonster : MonoBehaviour
             return;
         
         isDead = true;
+        deathWorldPosition = transform.position;
+        lockDeathPosition = monsterAnimator != null;
 
         ChangeState(MonsterState.Dead);
         StopDeathPhysics();
@@ -326,6 +340,9 @@ public class BaseMonster : MonoBehaviour
         if (monsterAnimator != null)
         {
             monsterAnimator.SetBool(DeathId, true);
+            int deathStateHash = Animator.StringToHash("Base Layer.Death");
+            if (monsterAnimator.HasState(0, deathStateHash))
+                monsterAnimator.CrossFadeInFixedTime(deathStateHash, 0.05f, 0, 0f);
             StartCoroutine(DestroyAfterDeathAnimation());
         }
         else
@@ -336,15 +353,15 @@ public class BaseMonster : MonoBehaviour
 
     private void StopDeathPhysics()
     {
-        // 사망 시 기존 관성만 제거하고 중력/바닥 충돌은 유지해
-        // 공중에 있던 박쥐가 바닥 위에 착지할 수 있도록 합니다.
+        // Animator 사망 클립이 재생되는 동안 물리 루트가 지면 아래로
+        // 떨어지지 않도록 고정합니다. 애니메이터가 없는 몬스터만 물리로 처리합니다.
         Rigidbody[] rigidbodies = GetComponentsInChildren<Rigidbody>(true);
         foreach (Rigidbody monsterRigidbody in rigidbodies)
         {
             monsterRigidbody.linearVelocity = Vector3.zero;
             monsterRigidbody.angularVelocity = Vector3.zero;
-            monsterRigidbody.isKinematic = false;
-            monsterRigidbody.useGravity = true;
+            monsterRigidbody.isKinematic = monsterAnimator != null;
+            monsterRigidbody.useGravity = monsterAnimator == null;
             monsterRigidbody.detectCollisions = true;
             monsterRigidbody.WakeUp();
         }
@@ -375,7 +392,21 @@ public class BaseMonster : MonoBehaviour
 
     private IEnumerator DestroyAfterDeathAnimation()
     {
-        yield return new WaitForSeconds(GetDeathAnimationDuration());
+        if (monsterAnimator != null)
+        {
+            int deathStateHash = Animator.StringToHash("Base Layer.Death");
+            float timeout = Time.time + GetDeathAnimationDuration() + 1f;
+
+            while (Time.time < timeout && monsterAnimator != null)
+            {
+                AnimatorStateInfo state = monsterAnimator.GetCurrentAnimatorStateInfo(0);
+                if (state.fullPathHash == deathStateHash && state.normalizedTime >= 1f)
+                    break;
+
+                yield return null;
+            }
+        }
+
         Destroy(gameObject);
     }
 
