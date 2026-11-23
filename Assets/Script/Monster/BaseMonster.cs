@@ -49,6 +49,7 @@ public class BaseMonster : MonoBehaviour
     public float CurrentHealth => _currentHealth;
     public bool IsDead => isDead;
     public MonsterState CurrentState => _currentState;
+    public event System.Action<float> HealthChanged;
 
     protected virtual void Awake()
     {
@@ -260,7 +261,8 @@ public class BaseMonster : MonoBehaviour
 
         foreach (AnimationClip clip in monsterAnimator.runtimeAnimatorController.animationClips)
         {
-            if (clip.name.IndexOf("death", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            if (clip.name.IndexOf("death", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                clip.name.IndexOf("dead", System.StringComparison.OrdinalIgnoreCase) >= 0)
                 return clip.length;
         }
 
@@ -284,6 +286,7 @@ public class BaseMonster : MonoBehaviour
         _currentHealth -= damage.damage;
 
         _currentHealth = Mathf.Max(0f, _currentHealth);
+        HealthChanged?.Invoke(_currentHealth);
 
         if (_currentHealth <= 0f)
         {
@@ -395,7 +398,7 @@ public class BaseMonster : MonoBehaviour
         if (monsterAnimator != null)
         {
             int deathStateHash = Animator.StringToHash("Base Layer.Death");
-            float timeout = Time.time + GetDeathAnimationDuration() + 1f;
+            float timeout = Time.time + GetDeathAnimationDuration() + 2f;
 
             while (Time.time < timeout && monsterAnimator != null)
             {

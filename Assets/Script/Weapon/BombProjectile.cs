@@ -134,13 +134,18 @@ public class BombProjectile : MonoBehaviour
         foreach (Collider hit in hits)
         {
             BaseMonster monster = hit.GetComponentInParent<BaseMonster>();
-            if (monster == null || monster.gameObject == owner || !hitMonsters.Add(monster))
+            if (monster == null || monster.gameObject == owner || hitMonsters.Contains(monster))
                 continue;
 
-            Vector3 directionFromBlast = monster.transform.position - transform.position;
+            // Use the nearest point on the hit collider, not the monster pivot:
+            // large enemies can overlap the blast while their root stays outside.
+            Vector3 closestPoint = hit.ClosestPoint(transform.position);
+            Vector3 directionFromBlast = closestPoint - transform.position;
             directionFromBlast.y = 0f;
             if (directionFromBlast.magnitude > explosionRadius)
                 continue;
+
+            hitMonsters.Add(monster);
 
             if (directionFromBlast.sqrMagnitude <= 0.001f)
                 directionFromBlast = direction;

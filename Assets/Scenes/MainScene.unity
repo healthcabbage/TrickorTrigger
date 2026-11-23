@@ -992,6 +992,8 @@ MonoBehaviour:
   monsterPrefabs:
   - {fileID: 900000003, guid: cd81ca632c72d104ca37c4312d631f27, type: 3}
   - {fileID: 7824229759183533415, guid: 74bcfced07b7e344ea3433665e09cbdd, type: 3}
+  - {fileID: 6233317987545578225, guid: 6c586c16332a57a4985e90a5c2096226, type: 3}
+  - {fileID: 4732718608986827793, guid: 6508d10fd7ea37b428736da5edc411d0, type: 3}
   targetPumpkin: {fileID: 740149880}
   spawnPoint: {fileID: 1978023846}
   spawnInterval: 2
@@ -2262,10 +2264,12 @@ MonoBehaviour:
   auxiliaryWeaponUnlockTimeSeconds: 60
   bossSpawnSchedules:
   - eventName: "\uC911\uAC04 \uBCF4\uC2A4"
-    spawnAtSeconds: 180
+    spawnAtSeconds: 5
     boss: {fileID: 131665605}
     spawnPoint: {fileID: 1978023846}
     targetPumpkin: {fileID: 740149880}
+  targetPumpkin: {fileID: 740149880}
+  bossHealthBarLerpSpeed: 4
 --- !u!1 &1978023845
 GameObject:
   m_ObjectHideFlags: 0

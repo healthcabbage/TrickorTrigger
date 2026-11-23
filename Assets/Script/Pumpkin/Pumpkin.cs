@@ -7,6 +7,10 @@ public class Pumpkin : MonoBehaviour
     private PumpkinState stats;
 
     private float currentHealth;
+    private bool isDead;
+
+    public float CurrentHealth => currentHealth;
+    public bool IsDead => isDead;
 
         private void Awake()
     {
@@ -17,11 +21,15 @@ public class Pumpkin : MonoBehaviour
         }
 
         currentHealth = stats.maxHealth;
+        isDead = false;
         Debug.Log(currentHealth);
     }
 
         public void TakeDamage(float damage)
     {
+        if (isDead || stats == null || damage <= 0f)
+            return;
+
         float finalDamage = Mathf.Max(
             0f,
             damage - stats.defense
@@ -42,6 +50,9 @@ public class Pumpkin : MonoBehaviour
 
         public void Heal(float amount)
     {
+        if (isDead || stats == null || amount <= 0f)
+            return;
+
         currentHealth += amount;
 
         currentHealth = Mathf.Min(
@@ -52,7 +63,11 @@ public class Pumpkin : MonoBehaviour
 
     private void Die()
     {
-        this.gameObject.SetActive(false);
+        if (isDead)
+            return;
+
+        isDead = true;
+        gameObject.SetActive(false);
         Debug.Log("호박 파괴!");
     }
     

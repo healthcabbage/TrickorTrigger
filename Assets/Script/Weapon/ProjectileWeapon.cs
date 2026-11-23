@@ -100,7 +100,8 @@ public class ProjectileWeapon : BaseWeapon
                     ProjectileSpeed,
                     ProjectileLifetime,
                     weaponData.knockbackPower,
-                    additionalPiercingHits);
+                    additionalPiercingHits,
+                    transform.root.gameObject);
             }
         }
     }

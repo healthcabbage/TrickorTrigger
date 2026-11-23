@@ -50,6 +50,12 @@ public class BossMonster : BaseMonster
     [SerializeField, Min(0f)] private float skillGaugeHeight = 2.5f;
     private const float ShockwaveEffectDuration = 0.45f;
 
+    public string BossDisplayName => bossStats != null ? bossStats.bossName : gameObject.name;
+    public float MaxHealth => bossStats != null ? bossStats.maxHealth : 0f;
+    public float HealthNormalized => bossStats != null
+        ? Mathf.Clamp01(_currentHealth / Mathf.Max(1f, bossStats.maxHealth))
+        : 0f;
+
     public override void InitializeMonster()
     {
         if (bossStats == null)
