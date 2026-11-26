@@ -454,7 +454,7 @@ public class BaseMonster : MonoBehaviour
                     Quaternion.identity
                 );
 
-                DropItem dropItem = dropObject.GetComponent<DropItem>();
+                DropItem dropItem = dropObject.GetComponentInChildren<DropItem>(true);
 
                 if (dropItem != null)
                 {
@@ -467,14 +467,34 @@ public class BaseMonster : MonoBehaviour
 
     private Vector3 GetDropPosition(List<Vector3> usedPositions)
     {
+        PlayerController player = FindFirstObjectByType<PlayerController>();
+        Vector3 awayFromPlayer = Vector3.zero;
+        if (player != null)
+        {
+            awayFromPlayer = transform.position - player.transform.position;
+            awayFromPlayer.y = 0f;
+            if (awayFromPlayer.sqrMagnitude > 0.001f)
+                awayFromPlayer.Normalize();
+        }
+
         for (int attempt = 0; attempt < maxPositionAttempts; attempt++)
         {
-            // 몬스터 주변의 랜덤한 위치
-            Vector2 randomOffset =
-                Random.insideUnitCircle * dropRadius;
+            Vector3 offset;
+            if (awayFromPlayer.sqrMagnitude > 0.001f)
+            {
+                // Keep the toss in the half-space opposite the player, with some variation.
+                float angle = Random.Range(-55f, 55f);
+                Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * awayFromPlayer;
+                float distance = Random.Range(Mathf.Max(0.35f, minDropDistance), dropRadius);
+                offset = direction * distance;
+            }
+            else
+            {
+                Vector2 randomOffset = Random.insideUnitCircle * dropRadius;
+                offset = new Vector3(randomOffset.x, 0f, randomOffset.y);
+            }
 
-            Vector3 candidate = transform.position +
-                new Vector3(randomOffset.x, 0f, randomOffset.y);
+            Vector3 candidate = transform.position + offset;
             candidate.y = 0.5f;
 
             bool isOverlapping = false;
@@ -498,7 +518,10 @@ public class BaseMonster : MonoBehaviour
         }
 
         // 적절한 위치를 찾지 못하면 마지막 위치 반환
-        Vector3 fallbackPosition = transform.position;
+        Vector3 fallbackPosition = transform.position +
+            (awayFromPlayer.sqrMagnitude > 0.001f
+                ? awayFromPlayer * dropRadius
+                : Vector3.zero);
         fallbackPosition.y = 0.5f;
         return fallbackPosition;
     }

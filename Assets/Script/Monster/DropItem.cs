@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class DropItem : MonoBehaviour
 {
+    [SerializeField] private Transform cleanupRoot;
+
+    public Transform EffectTransform => cleanupRoot != null ? cleanupRoot : transform;
+
     private int experienceAmount;
     private bool isCollected;
 
@@ -26,6 +30,6 @@ public class DropItem : MonoBehaviour
 
         playerExperience.AddExperience(experienceAmount);
 
-        Destroy(gameObject);
+        Destroy(cleanupRoot != null ? cleanupRoot.gameObject : gameObject);
     }
 }

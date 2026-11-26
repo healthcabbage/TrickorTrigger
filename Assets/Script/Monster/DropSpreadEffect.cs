@@ -31,13 +31,17 @@ public sealed class DropSpreadEffect : MonoBehaviour
                 continue;
 
             ExistingDrops.Add(drop);
-            Vector3 offset = drop.transform.position - deathPosition;
+            Transform dropVisual = drop.EffectTransform;
+            if (dropVisual == null)
+                continue;
+
+            Vector3 offset = dropVisual.position - deathPosition;
             offset.y = 0f;
             if (offset.sqrMagnitude > SearchRadius * SearchRadius)
                 continue;
 
-            effectRunner.StartCoroutine(effectRunner.Toss(drop.transform, deathPosition));
-            effectRunner.StartCoroutine(effectRunner.FloatAndRotate(drop.transform));
+            effectRunner.StartCoroutine(effectRunner.Toss(dropVisual, deathPosition));
+            effectRunner.StartCoroutine(effectRunner.FloatAndRotate(dropVisual));
         }
 
         ExistingDrops.Clear();
@@ -95,6 +99,8 @@ public sealed class DropSpreadEffect : MonoBehaviour
         float elapsed = 0f;
 
         Rigidbody body = drop.GetComponent<Rigidbody>();
+        if (body == null)
+            body = drop.GetComponentInChildren<Rigidbody>();
         bool wasKinematic = body != null && body.isKinematic;
         if (body != null)
             body.isKinematic = true;
