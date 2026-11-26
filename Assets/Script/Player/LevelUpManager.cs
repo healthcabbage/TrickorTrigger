@@ -206,7 +206,7 @@ public class LevelUpManager : MonoBehaviour
             }
 
             int weaponIndex = i;
-            string label = $"{weapons[i].DisplayName}\n{weapons[i].Description}\n클릭하여 선택";
+            string label = $"{weapons[i].DisplayName}\n{weapons[i].Description}";
             BindOption(i, label, () => SelectAuxiliaryWeapon(weaponIndex));
         }
     }
@@ -476,9 +476,9 @@ public class LevelUpManager : MonoBehaviour
         if (count <= 0)
             return;
 
-        const float cardWidth = 500f;
-        const float cardHeight = 550f;
-        const float spacing = 540f;
+        float cardWidth = count == 4 ? 420f : 500f;
+        float cardHeight = count == 4 ? 470f : 550f;
+        float spacing = count == 4 ? 465f : 540f;
         float firstX = -spacing * (count - 1) * 0.5f;
 
         for (int i = 0; i < count; i++)

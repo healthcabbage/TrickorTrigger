@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
@@ -284,8 +284,8 @@ public class BaseMonster : MonoBehaviour
             return;
         
         _currentHealth -= damage.damage;
-
         _currentHealth = Mathf.Max(0f, _currentHealth);
+        DamageNumberPopup.Show(damage.damage, GetDamagePopupPosition());
         HealthChanged?.Invoke(_currentHealth);
 
         if (_currentHealth <= 0f)
@@ -295,6 +295,30 @@ public class BaseMonster : MonoBehaviour
         }
 
         OnHit(damage);
+    }
+
+    private Vector3 GetDamagePopupPosition()
+    {
+        Collider[] monsterColliders = GetComponentsInChildren<Collider>();
+        float highestPoint = transform.position.y + 1.5f;
+        Vector3 horizontalCenter = transform.position;
+        bool foundCollider = false;
+
+        foreach (Collider monsterCollider in monsterColliders)
+        {
+            if (monsterCollider == null || !monsterCollider.enabled)
+                continue;
+
+            Bounds bounds = monsterCollider.bounds;
+            if (!foundCollider || bounds.max.y > highestPoint)
+            {
+                highestPoint = bounds.max.y;
+                horizontalCenter = bounds.center;
+                foundCollider = true;
+            }
+        }
+
+        return new Vector3(horizontalCenter.x, highestPoint + 0.25f, horizontalCenter.z);
     }
 
     //몬스터가 공격을 받았을 때 호출되는 로직
