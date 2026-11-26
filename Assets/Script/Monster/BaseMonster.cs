@@ -338,7 +338,11 @@ public class BaseMonster : MonoBehaviour
         IgnorePlayerCollision();
 
         if (dropReward)
+        {
+            DropSpreadEffect.CaptureExistingDrops();
             DropReward();
+            DropSpreadEffect.AnimateAt(deathWorldPosition);
+        }
 
         if (monsterAnimator != null)
         {

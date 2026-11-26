@@ -990,10 +990,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterSpawner
   monsterPrefabs:
-  - {fileID: 900000003, guid: cd81ca632c72d104ca37c4312d631f27, type: 3}
   - {fileID: 7824229759183533415, guid: 74bcfced07b7e344ea3433665e09cbdd, type: 3}
-  - {fileID: 6233317987545578225, guid: 6c586c16332a57a4985e90a5c2096226, type: 3}
-  - {fileID: 4732718608986827793, guid: 6508d10fd7ea37b428736da5edc411d0, type: 3}
   targetPumpkin: {fileID: 740149880}
   spawnPoint: {fileID: 1978023846}
   spawnInterval: 2
@@ -1144,15 +1141,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5105467327554759180, guid: 32a07afdb9244484ea69e3551e9cbd4f, type: 3}
       propertyPath: m_LocalScale.x
-      value: 5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5105467327554759180, guid: 32a07afdb9244484ea69e3551e9cbd4f, type: 3}
       propertyPath: m_LocalScale.y
-      value: 5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5105467327554759180, guid: 32a07afdb9244484ea69e3551e9cbd4f, type: 3}
       propertyPath: m_LocalScale.z
-      value: 5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5105467327554759180, guid: 32a07afdb9244484ea69e3551e9cbd4f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2264,7 +2261,7 @@ MonoBehaviour:
   auxiliaryWeaponUnlockTimeSeconds: 60
   bossSpawnSchedules:
   - eventName: "\uC911\uAC04 \uBCF4\uC2A4"
-    spawnAtSeconds: 5
+    spawnAtSeconds: 180
     boss: {fileID: 131665605}
     spawnPoint: {fileID: 1978023846}
     targetPumpkin: {fileID: 740149880}
