@@ -1,9 +1,12 @@
-
+﻿
 using UnityEngine;
 using System.Collections.Generic;
 
 public class ProjectileWeapon : BaseWeapon
 {
+    [Header("피격 넉백")]
+    [Tooltip("투사체가 몬스터를 밀어내는 거리입니다.")]
+    [SerializeField, Min(0f)] private float knockbackPower = 5f;
     [Header("Projectile Spawn")]
     [SerializeField] private Transform firePoint;
 
@@ -99,7 +102,7 @@ public class ProjectileWeapon : BaseWeapon
                     Damage,
                     ProjectileSpeed,
                     ProjectileLifetime,
-                    weaponData.knockbackPower,
+                    knockbackPower,
                     additionalPiercingHits,
                     transform.root.gameObject);
             }

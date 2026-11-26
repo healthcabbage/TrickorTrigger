@@ -34,6 +34,8 @@ public class BaseMonster : MonoBehaviour
 
     [Header("Hit Reaction")]
     [SerializeField] private bool ignoreKnockback;
+    [SerializeField] private GameObject hitEffectPrefab;
+    [SerializeField, Min(0.05f)] private float knockbackDuration = 0.35f;
 
     protected bool isDead;
     protected bool isInitialized;
@@ -41,6 +43,8 @@ public class BaseMonster : MonoBehaviour
     private Animator monsterAnimator;
     private Vector3 deathWorldPosition;
     private bool lockDeathPosition;
+    private bool isBeingKnockedBack;
+    private Coroutine knockbackCoroutine;
     private static readonly int MoveSpeedId = Animator.StringToHash("MoveSpeed");
     private static readonly int AttackId = Animator.StringToHash("Attack");
     private static readonly int DeathId = Animator.StringToHash("Death");
@@ -65,20 +69,23 @@ public class BaseMonster : MonoBehaviour
         if (!isInitialized || isDead)
             return;
 
-        switch (_currentState)
+        if (!isBeingKnockedBack)
         {
-            case MonsterState.Idle:
-                UpdateIdle();
-                break;
-            case MonsterState.Move:
-                UpdateMove();
-                break;
-            case MonsterState.Attack:
-                UpdateAttack();
-                break;
-            case MonsterState.Dead:
-                UpdateDead();
-                break;
+            switch (_currentState)
+            {
+                case MonsterState.Idle:
+                    UpdateIdle();
+                    break;
+                case MonsterState.Move:
+                    UpdateMove();
+                    break;
+                case MonsterState.Attack:
+                    UpdateAttack();
+                    break;
+                case MonsterState.Dead:
+                    UpdateDead();
+                    break;
+            }
         }
 
         UpdateAnimatorMovement();
@@ -251,7 +258,8 @@ public class BaseMonster : MonoBehaviour
         if (monsterAnimator == null || isDead)
             return;
 
-        monsterAnimator.SetFloat(MoveSpeedId, _currentState == MonsterState.Move ? 1f : 0f);
+        monsterAnimator.SetFloat(MoveSpeedId,
+            !isBeingKnockedBack && _currentState == MonsterState.Move ? 1f : 0f);
     }
 
     private float GetDeathAnimationDuration()
@@ -285,6 +293,7 @@ public class BaseMonster : MonoBehaviour
         
         _currentHealth -= damage.damage;
         _currentHealth = Mathf.Max(0f, _currentHealth);
+        ShowHitEffect();
         DamageNumberPopup.Show(damage.damage, GetDamagePopupPosition());
         HealthChanged?.Invoke(_currentHealth);
 
@@ -297,6 +306,37 @@ public class BaseMonster : MonoBehaviour
         OnHit(damage);
     }
 
+    private void ShowHitEffect()
+    {
+        if (hitEffectPrefab == null)
+            return;
+
+        GameObject effect = Instantiate(hitEffectPrefab, GetHitEffectPosition(), Quaternion.identity);
+        ParticleSystem[] particleSystems = effect.GetComponentsInChildren<ParticleSystem>();
+        float effectLifetime = 1f;
+        foreach (ParticleSystem particleSystem in particleSystems)
+        {
+            ParticleSystem.MainModule main = particleSystem.main;
+            effectLifetime = Mathf.Max(effectLifetime, main.duration + main.startLifetime.constantMax);
+        }
+
+        Destroy(effect, effectLifetime + 0.25f);
+    }
+
+    private Vector3 GetHitEffectPosition()
+    {
+        Renderer[] monsterRenderers = GetComponentsInChildren<Renderer>();
+        foreach (Renderer monsterRenderer in monsterRenderers)
+        {
+            if (monsterRenderer != null && monsterRenderer.enabled)
+                return monsterRenderer.bounds.center;
+        }
+
+        Collider monsterCollider = GetComponentInChildren<Collider>();
+        return monsterCollider != null
+            ? monsterCollider.bounds.center
+            : transform.position + Vector3.up;
+    }
     private Vector3 GetDamagePopupPosition()
     {
         Collider[] monsterColliders = GetComponentsInChildren<Collider>();
@@ -345,7 +385,35 @@ public class BaseMonster : MonoBehaviour
             return;
 
         direction.y = 0f;
-        transform.position += direction.normalized * power;
+        if (direction.sqrMagnitude <= 0.001f)
+            return;
+
+        if (knockbackCoroutine != null)
+            StopCoroutine(knockbackCoroutine);
+
+        knockbackCoroutine = StartCoroutine(SmoothKnockback(direction.normalized, power));
+    }
+
+    private IEnumerator SmoothKnockback(Vector3 direction, float distance)
+    {
+        isBeingKnockedBack = true;
+        float duration = Mathf.Max(0.05f, knockbackDuration);
+        float elapsed = 0f;
+        float previousProgress = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float normalizedTime = Mathf.Clamp01(elapsed / duration);
+            float easedProgress = 1f - Mathf.Pow(1f - normalizedTime, 3f);
+            float frameProgress = easedProgress - previousProgress;
+            transform.position += direction * (distance * frameProgress);
+            previousProgress = easedProgress;
+            yield return null;
+        }
+
+        isBeingKnockedBack = false;
+        knockbackCoroutine = null;
     }
 
     protected virtual void Die(bool dropReward = true)
@@ -354,6 +422,12 @@ public class BaseMonster : MonoBehaviour
             return;
         
         isDead = true;
+        if (knockbackCoroutine != null)
+        {
+            StopCoroutine(knockbackCoroutine);
+            knockbackCoroutine = null;
+            isBeingKnockedBack = false;
+        }
         deathWorldPosition = transform.position;
         lockDeathPosition = monsterAnimator != null;
 

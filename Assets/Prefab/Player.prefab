@@ -244,6 +244,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon
   weaponData: {fileID: 11400000, guid: 003008a8e622dc74695bd766eea2d46e, type: 2}
+  knockbackPower: 5
   firePoint: {fileID: 6649326039173313360}
 --- !u!114 &5663925912380112534
 MonoBehaviour:
@@ -258,6 +259,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeConeWeapon
   weaponData: {fileID: 11400000, guid: a9013bb509bd4b25bf637a2b92d7d891, type: 2}
+  knockbackPower: 10
   attackPoint: {fileID: 7918670691759717123}
   monsterLayers:
     serializedVersion: 2
@@ -281,6 +283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BombWeapon
   weaponData: {fileID: 11400000, guid: 36eb342706d9429c91bd7c8bf988133b, type: 2}
+  explosionKnockbackPower: 15
   throwPoint: {fileID: 7918670691759717123}
 --- !u!114 &741141562827747522
 MonoBehaviour:

@@ -2009,6 +2009,8 @@ MonoBehaviour:
   minDropDistance: 0.5
   maxPositionAttempts: 30
   ignoreKnockback: 0
+  hitEffectPrefab: {fileID: 500345726442012828, guid: b34db3ab990e62140941c39c8d3157df, type: 3}
+  knockbackDuration: 0.35
   attackPoint: {fileID: 6855608152980888728}
   projectilePrefab: {fileID: 3636224759188329300, guid: 8aa478dcedc115c4ab23d1b6eb3e72c8, type: 3}
   projectileSpeed: 8

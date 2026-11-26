@@ -1,8 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class MeleeConeWeapon : BaseWeapon
 {
+    [Header("피격 넉백")]
+    [Tooltip("근거리 공격으로 몬스터를 밀어내는 거리입니다.")]
+    [SerializeField, Min(0f)] private float knockbackPower = 10f;
     [Header("Attack Origin")]
     [SerializeField] private Transform attackPoint;
     [SerializeField] private LayerMask monsterLayers = ~0;
@@ -276,7 +279,7 @@ public class MeleeConeWeapon : BaseWeapon
                 damage = Damage,
                 attacker = gameObject,
                 attackSource = gameObject,
-                knockbackPower = weaponData.knockbackPower,
+                knockbackPower = knockbackPower,
                 knockbackDirection = toMonster.sqrMagnitude > 0.001f ? toMonster.normalized : direction
             };
             monster.TakeDamage(hitDamage);

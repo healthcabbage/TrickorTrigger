@@ -1,8 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 public class BombWeapon : BaseWeapon
 {
+    [Header("피격 넉백")]
+    [Tooltip("폭발이 몬스터를 밀어내는 거리입니다.")]
+    [SerializeField, Min(0f)] private float explosionKnockbackPower = 15f;
     [Header("Bomb Spawn")]
     [SerializeField] private Transform throwPoint;
 
@@ -192,7 +195,7 @@ public class BombWeapon : BaseWeapon
             bomb.Initialize(
                 bombDirection,
                 Damage,
-                weaponData.knockbackPower,
+                explosionKnockbackPower,
                 weaponData.projectileSpeed,
                 CurrentThrowRange,
                 CurrentExplosionDelay,

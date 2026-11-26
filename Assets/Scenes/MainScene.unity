@@ -508,6 +508,8 @@ MonoBehaviour:
   minDropDistance: 0.5
   maxPositionAttempts: 30
   ignoreKnockback: 0
+  hitEffectPrefab: {fileID: 500345726442012828, guid: b34db3ab990e62140941c39c8d3157df, type: 3}
+  knockbackDuration: 0.35
   bossStats: {fileID: 11400000, guid: 3633fb1e95b08f447a4ff4aac0667291, type: 2}
   targetPlayer: {fileID: 0}
   skillGaugeHeight: 2.5
@@ -3676,6 +3678,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileWeapon
   weaponData: {fileID: 11400000, guid: 003008a8e622dc74695bd766eea2d46e, type: 2}
+  knockbackPower: 3
   firePoint: {fileID: 1311589262}
 --- !u!114 &1311589268
 MonoBehaviour:
@@ -3690,6 +3693,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MeleeConeWeapon
   weaponData: {fileID: 11400000, guid: a9013bb509bd4b25bf637a2b92d7d891, type: 2}
+  knockbackPower: 5
   attackPoint: {fileID: 1311589262}
   monsterLayers:
     serializedVersion: 2
@@ -3713,6 +3717,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BombWeapon
   weaponData: {fileID: 11400000, guid: 36eb342706d9429c91bd7c8bf988133b, type: 2}
+  explosionKnockbackPower: 7
   throwPoint: {fileID: 1311589262}
 --- !u!114 &1311589270
 MonoBehaviour:
@@ -4232,7 +4237,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75c80b1eb76e4a879d15cb2b510b4313, type: 3}
   m_Name: GameProgressionManager
   m_EditorClassIdentifier: Assembly-CSharp::GameProgressionManager
-  auxiliaryWeaponUnlockTimeSeconds: 10
+  auxiliaryWeaponUnlockTimeSeconds: 60
   bossSpawnSchedules:
   - eventName: "\uC911\uAC04 \uBCF4\uC2A4"
     spawnAtSeconds: 180

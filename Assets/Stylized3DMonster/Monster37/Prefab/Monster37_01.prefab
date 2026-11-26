@@ -105,6 +105,8 @@ MonoBehaviour:
   minDropDistance: 0.5
   maxPositionAttempts: 30
   ignoreKnockback: 0
+  hitEffectPrefab: {fileID: 500345726442012828, guid: b34db3ab990e62140941c39c8d3157df, type: 3}
+  knockbackDuration: 0.35
   fuseDuration: 2
   explosionRadius: 2
 --- !u!1001 &7308056830492724288
