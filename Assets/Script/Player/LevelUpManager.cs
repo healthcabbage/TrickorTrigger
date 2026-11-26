@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System;
+﻿using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,10 +37,10 @@ public class LevelUpManager : MonoBehaviour
     [SerializeField] private GameProgressionManager progressionManager;
     [SerializeField] private PlayerController playerController;
     [SerializeField] private GameObject levelUpPanel;
-
-    private Button[] optionButtons;
-    private Text[] optionLabels;
-    private Text panelTitle;
+    [SerializeField] private TMP_FontAsset choiceFont;
+    [SerializeField] private Button[] optionButtons;
+    [SerializeField] private TMP_Text[] optionLabels;
+    [SerializeField] private TMP_Text panelTitle;
     private RectTransform panelBackground;
     private readonly Queue<int> pendingLevelUps = new Queue<int>();
     private bool hasChosenWeapon;
@@ -65,20 +64,15 @@ public class LevelUpManager : MonoBehaviour
         if (progressionManager == null)
             progressionManager = FindObjectOfType<GameProgressionManager>();
 
-        if (levelUpPanel != null)
-        {
-            optionButtons = levelUpPanel.GetComponentsInChildren<Button>(true);
-            Array.Sort(optionButtons, (left, right) =>
-                left.GetComponent<RectTransform>().anchoredPosition.x.CompareTo(
-                    right.GetComponent<RectTransform>().anchoredPosition.x));
-            optionLabels = new Text[optionButtons.Length];
-            for (int i = 0; i < optionButtons.Length; i++)
-                optionLabels[i] = EnsureButtonLabel(optionButtons[i]);
-
+        bool hasValidSelectionUi = optionButtons != null && optionLabels != null &&
+            optionButtons.Length == optionLabels.Length && optionButtons.Length >= 4;
+        if (!hasValidSelectionUi)
+            Debug.LogError("선택 UI 카드 4개와 각 TMP 라벨을 씬에서 연결해야 합니다.", this);
+        else
             SetupPanelLayout();
 
+        if (levelUpPanel != null)
             levelUpPanel.SetActive(false);
-        }
 
         if (weaponController != null)
             weaponController.SetGameplayActive(false);
@@ -138,6 +132,13 @@ public class LevelUpManager : MonoBehaviour
         }
 
         isChoosing = true;
+        Time.timeScale = 0f;
+        if (weaponController != null)
+            weaponController.SetGameplayActive(false);
+        if (auxiliaryWeaponController != null)
+            auxiliaryWeaponController.SetGameplayActive(false);
+        if (playerController != null)
+            playerController.enabled = false;
         levelUpPanel.SetActive(true);
         int count = Mathf.Min(weapons.Length, optionButtons.Length);
         SetPanelTitle("무기를 선택하세요");
@@ -307,7 +308,7 @@ public class LevelUpManager : MonoBehaviour
 
         Shuffle(upgrades);
         int optionCount = Mathf.Min(upgrades.Count, 3);
-        SetPanelTitle($"플레이어 레벨 {pendingLevelUps.Peek()} · 강화 선택");
+        SetPanelTitle($"무기 강화 {weapon.Level + 1}단계 강화 선택");
         LayoutOptionCards(optionCount);
         for (int i = 0; i < optionButtons.Length; i++)
         {
@@ -408,14 +409,17 @@ public class LevelUpManager : MonoBehaviour
             labelRect.anchorMax = Vector2.one;
             labelRect.pivot = new Vector2(0.5f, 0.5f);
             labelRect.anchoredPosition = Vector2.zero;
-            labelRect.sizeDelta = new Vector2(-32f, -32f);
+            labelRect.sizeDelta = new Vector2(-64f, -64f);
 
             optionLabels[index].text = label;
-            optionLabels[index].alignment = TextAnchor.MiddleCenter;
-            optionLabels[index].fontSize = 24;
-            optionLabels[index].resizeTextForBestFit = true;
-            optionLabels[index].resizeTextMinSize = 18;
-            optionLabels[index].resizeTextMaxSize = 26;
+            optionLabels[index].alignment = TextAlignmentOptions.Center;
+            optionLabels[index].fontSize = 42;
+            optionLabels[index].enableAutoSizing = true;
+            optionLabels[index].fontSizeMin = 28;
+            optionLabels[index].fontSizeMax = 46;
+            optionLabels[index].textWrappingMode = TextWrappingModes.Normal;
+            optionLabels[index].overflowMode = TextOverflowModes.Truncate;
+            optionLabels[index].font = choiceFont;
             optionLabels[index].color = Color.white;
             optionLabels[index].raycastTarget = false;
         }
@@ -423,19 +427,18 @@ public class LevelUpManager : MonoBehaviour
 
     private void SetupPanelLayout()
     {
-        Image backgroundImage = levelUpPanel.GetComponentInChildren<Image>(true);
-        if (backgroundImage != null)
+        Transform panelContent = levelUpPanel.transform.childCount > 0
+            ? levelUpPanel.transform.GetChild(0)
+            : levelUpPanel.transform;
+        panelBackground = panelContent.GetComponent<RectTransform>();
+        if (panelBackground != null)
         {
-            panelBackground = backgroundImage.rectTransform;
             panelBackground.anchorMin = new Vector2(0.5f, 0.5f);
             panelBackground.anchorMax = new Vector2(0.5f, 0.5f);
             panelBackground.pivot = new Vector2(0.5f, 0.5f);
             panelBackground.anchoredPosition = Vector2.zero;
-            panelBackground.sizeDelta = new Vector2(1320f, 560f);
-            backgroundImage.color = new Color(0.07f, 0.09f, 0.14f, 0.97f);
+            panelBackground.sizeDelta = new Vector2(1500f, 640f);
         }
-
-        EnsureFourthOptionButton();
 
         for (int i = 0; i < optionButtons.Length; i++)
         {
@@ -451,27 +454,20 @@ public class LevelUpManager : MonoBehaviour
                 cardImage.color = Color.white;
         }
 
-        if (optionLabels.Length > 0 && optionLabels[0] != null && panelBackground != null)
+        if (panelTitle != null)
         {
-            GameObject titleObject = Instantiate(optionLabels[0].gameObject, panelBackground, false);
-            titleObject.name = "Choice Panel Title";
-            panelTitle = titleObject.GetComponent<Text>();
-            RectTransform titleRect = titleObject.GetComponent<RectTransform>();
+            panelTitle.raycastTarget = false;
+            panelTitle.alignment = TextAlignmentOptions.Center;
+            RectTransform titleRect = panelTitle.rectTransform;
             titleRect.anchorMin = new Vector2(0.5f, 1f);
             titleRect.anchorMax = new Vector2(0.5f, 1f);
             titleRect.pivot = new Vector2(0.5f, 1f);
-            titleRect.anchoredPosition = new Vector2(0f, -22f);
-            titleRect.sizeDelta = new Vector2(920f, 72f);
-            if (panelTitle != null)
-            {
-                panelTitle.raycastTarget = false;
-                panelTitle.alignment = TextAnchor.MiddleCenter;
-                panelTitle.fontSize = 36;
-                panelTitle.color = Color.white;
-                panelTitle.resizeTextForBestFit = true;
-                panelTitle.resizeTextMinSize = 24;
-                panelTitle.resizeTextMaxSize = 36;
-            }
+            titleRect.anchoredPosition = new Vector2(0f, 45f);
+            titleRect.sizeDelta = new Vector2(1100f, 90f);
+            panelTitle.fontSize = 50;
+            panelTitle.font = choiceFont;
+            panelTitle.color = Color.white;
+            panelTitle.enableAutoSizing = false;
         }
     }
 
@@ -480,9 +476,9 @@ public class LevelUpManager : MonoBehaviour
         if (count <= 0)
             return;
 
-        const float cardWidth = 285f;
-        const float cardHeight = 320f;
-        const float spacing = 310f;
+        const float cardWidth = 500f;
+        const float cardHeight = 550f;
+        const float spacing = 540f;
         float firstX = -spacing * (count - 1) * 0.5f;
 
         for (int i = 0; i < count; i++)
@@ -496,62 +492,10 @@ public class LevelUpManager : MonoBehaviour
         }
     }
 
-    private void EnsureFourthOptionButton()
-    {
-        if (optionButtons.Length >= 4 || optionButtons.Length == 0)
-            return;
-
-        GameObject clone = Instantiate(optionButtons[0].gameObject, optionButtons[0].transform.parent, false);
-        clone.name = "Auxiliary Choice Button";
-        Button button = clone.GetComponent<Button>();
-        button.onClick.RemoveAllListeners();
-
-        Array.Resize(ref optionButtons, optionButtons.Length + 1);
-        Array.Resize(ref optionLabels, optionLabels.Length + 1);
-        optionButtons[optionButtons.Length - 1] = button;
-        optionLabels[optionLabels.Length - 1] = EnsureButtonLabel(button);
-    }
-
     private void SetPanelTitle(string title)
     {
         if (panelTitle != null)
             panelTitle.text = title;
-    }
-
-    private static Text EnsureButtonLabel(Button button)
-    {
-        TMP_Text existingTmpLabel = button.GetComponentInChildren<TMP_Text>(true);
-        if (existingTmpLabel != null)
-            existingTmpLabel.enabled = false;
-
-        Text label = button.GetComponentInChildren<Text>(true);
-        if (label == null)
-        {
-            GameObject labelObject = new GameObject(
-                "Choice Label",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Text));
-            labelObject.transform.SetParent(button.transform, false);
-            label = labelObject.GetComponent<Text>();
-        }
-
-        RectTransform rect = label.rectTransform;
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.offsetMin = new Vector2(16f, 16f);
-        rect.offsetMax = new Vector2(-16f, -16f);
-        label.transform.SetAsLastSibling();
-
-        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        label.fontStyle = FontStyle.Bold;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.color = Color.white;
-        label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Overflow;
-        label.raycastTarget = false;
-        return label;
     }
 
     private void ContinueAfterChoice()

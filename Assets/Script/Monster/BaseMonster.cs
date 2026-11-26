@@ -495,7 +495,7 @@ public class BaseMonster : MonoBehaviour
             }
 
             Vector3 candidate = transform.position + offset;
-            candidate.y = 0.5f;
+            candidate.y = 0f;
 
             bool isOverlapping = false;
 
@@ -522,7 +522,7 @@ public class BaseMonster : MonoBehaviour
             (awayFromPlayer.sqrMagnitude > 0.001f
                 ? awayFromPlayer * dropRadius
                 : Vector3.zero);
-        fallbackPosition.y = 0.5f;
+        fallbackPosition.y = 0f;
         return fallbackPosition;
     }
 
